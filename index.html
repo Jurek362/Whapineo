@@ -9,7 +9,7 @@
     <!-- Open Graph meta tags for Discord/social media embeds -->
     <meta property="og:title" content="Whapineo - Oceny Kanałów WhatsApp">
     <meta property="og:description" content="Odkryj i oceniaj najlepsze kanały WhatsApp. Znajdź interesujące społeczności i dziel się opiniami!">
-    <meta property="og:image" content="https://i.postimg.cc/jSMcy1KV/file-00000000f2446246beb40b4c7e938a1b-1.png"> <!-- Nowy obrazek wyświetlany w podglądzie (embedzie) -->
+    <meta property="og:image" content="https://i.postimg.cc/jSMcy1KV/file-00000000f2446246beb40b4c7e938a1b-1.png"> <!-- Obrazek wyświetlany w podglądzie (embedzie) -->
     <meta property="og:url" content="YOUR_WEBSITE_URL_HERE"> <!-- Zmień na rzeczywisty URL Twojej strony -->
     <meta property="og:type" content="website">
 
@@ -26,12 +26,15 @@
             background: linear-gradient(135deg, #0f0f23 0%, #1a4d3a 50%, #2d5a2d 100%);
             min-height: 100vh;
             color: #333;
+            display: flex; /* Użyj flexbox, aby stopka była na dole */
+            flex-direction: column; /* Ułóż zawartość w kolumnie */
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            flex: 1; /* Pozwól kontenerowi rozciągać się, wypychając stopkę w dół */
         }
 
         /* Header */
@@ -43,6 +46,7 @@
             padding: 30px;
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative; /* Potrzebne do pozycjonowania przycisku */
         }
 
         .header h1 {
@@ -55,6 +59,7 @@
         .header p {
             color: rgba(255, 255, 255, 0.9);
             font-size: 1.2em;
+            margin-bottom: 20px; /* Dodany margines pod opisem */
         }
 
         /* Logo styling for header */
@@ -68,7 +73,6 @@
             border-radius: 15px; /* Zaokrąglone rogi logo */
         }
 
-
         /* Search Section */
         .search-section {
             background: white;
@@ -76,10 +80,7 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             margin-bottom: 30px;
-            /* Removed flex properties from here to center search-box instead */
         }
-
-        /* Removed .search-logo styling */
 
         .search-box {
             display: flex;
@@ -118,6 +119,7 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Dodany cień do przycisków */
         }
 
         .btn-primary {
@@ -148,6 +150,21 @@
             transform: none;
         }
 
+        /* Instruction button in header */
+        .header .btn-toggle-instructions {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            font-size: 1em;
+            margin-top: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .header .btn-toggle-instructions:hover {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+        }
+
 
         /* Channels Grid */
         .channels-grid {
@@ -166,7 +183,6 @@
             border: 1px solid rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
-            /* Allow card to grow based on content */
             height: auto; 
             min-height: 250px; /* Minimum height for consistency */
         }
@@ -204,14 +220,11 @@
             object-fit: cover; /* Cover the avatar area */
         }
 
-        /* Removed .channel-card-logo styling */
-
         .channel-info h3 {
             font-size: 1.3em;
             margin-bottom: 5px;
             color: #333;
             word-break: break-word; /* Włączone zawijanie słów dla nagłówków */
-            /* Removed flex properties as logo is no longer here */
         }
 
         .channel-info p { /* For follower count */
@@ -228,9 +241,6 @@
             word-break: break-all; /* Łamanie długich słów (dla kompatybilności wstecznej) */
             overflow-wrap: break-word; /* Preferowana właściwość do łamania długich słów i URL-i */
         }
-
-        /* Removed channel-top-image-container and channel-top-image styles */
-
 
         /* Rating Section */
         .rating-section {
@@ -256,9 +266,9 @@
         }
         
         .stars.disabled .star { /* Style for disabled buttons */
-            background: #ccc;
+            background: transparent; /* Changed to transparent so stars remain visible */
             cursor: not-allowed;
-            opacity: 0.5;
+            opacity: 0.7;
         }
 
         .rating-info {
@@ -412,6 +422,51 @@
             background: linear-gradient(45deg, #ff416c, #ff4b2b);
         }
 
+        /* Instruction Section Styling */
+        .instructions-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+            color: #333;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.7s ease-in-out, opacity 0.7s ease-in-out, padding 0.7s ease-in-out;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .instructions-section.show {
+            max-height: 500px; /* Adjust based on content height */
+            opacity: 1;
+            padding: 25px; /* Ensure padding is applied when shown */
+        }
+
+        .instructions-section h2 {
+            font-size: 1.8em;
+            color: #1a4d3a;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .instructions-section ul {
+            list-style-type: disc;
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        .instructions-section li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .instructions-section p {
+            margin-bottom: 10px;
+        }
+
+
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             .header h1 {
@@ -458,6 +513,32 @@
                 padding: 12px;
                 font-size: 14px;
             }
+
+            .instructions-section {
+                padding: 15px;
+            }
+            .instructions-section.show {
+                max-height: 700px; /* Adjust for mobile if needed */
+            }
+        }
+
+        /* Footer styles */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px; /* Odstęp od ostatniej sekcji */
+            background: rgba(0, 0, 0, 0.2); /* Lekko ciemniejsze tło dla stopki */
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9em;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        .footer strong {
+            color: rgba(255, 255, 255, 0.9); /* Nieco jaśniejszy kolor dla pogrubionego tekstu */
         }
     </style>
 </head>
@@ -467,6 +548,21 @@
             <img src="logo.png" alt="Whapineo Logo" class="logo">
             <h1>🚀 Whapineo</h1>
             <p>Odkryj i oceniaj najlepsze kanały WhatsApp</p>
+            <button id="toggleInstructionsBtn" class="btn btn-toggle-instructions" onclick="toggleInstructions()">Pokaż instrukcję</button>
+        </div>
+
+        <!-- Nowa sekcja z instrukcjami -->
+        <div id="instructionsSection" class="instructions-section">
+            <h2>Jak korzystać z Whapineo</h2>
+            <p>Witaj w Whapineo! Poniżej znajdziesz krótkie instrukcje, jak w pełni wykorzystać możliwości tej platformy:</p>
+            <ul>
+                <li><strong>Szukaj kanałów:</strong> Użyj pola wyszukiwania, aby znaleźć interesujące kanały WhatsApp po nazwie lub opisie.</li>
+                <li><strong>Dodaj kanał:</strong> Jeśli znasz kanał, którego nie ma na liście, użyj sekcji "Dodaj nowy kanał" i wklej link do niego.</li>
+                <li><strong>Oceniaj kanały:</strong> Kliknij na gwiazdki w karcie kanału, aby wystawić ocenę od 1 do 5. Możesz ocenić każdy kanał raz na 24 godziny.</li>
+                <li><strong>Dodawaj komentarze:</strong> Podziel się swoją opinią na temat kanału, pisząc komentarz w polu tekstowym i klikając "Dodaj komentarz".</li>
+                <li><strong>Dołącz do kanału:</strong> Użyj zielonego przycisku "Dołącz do kanału", aby bezpośrednio przejść do kanału na WhatsApp.</li>
+            </ul>
+            <p>Mamy nadzieję, że Whapineo pomoże Ci znaleźć wspaniałe społeczności!</p>
         </div>
 
         <div class="search-section">
@@ -494,6 +590,11 @@
     </div>
 
     <div id="notification" class="notification"></div>
+
+    <footer class="footer">
+        <p>Whapineo to niezależna platforma stworzona, aby pomóc Ci odkrywać i oceniać kanały WhatsApp.</p>
+        <p><strong>Niniejsza strona nie jest w żaden sposób powiązana, sponsorowana ani wspierana przez WhatsApp Inc.</strong></p>
+    </footer>
 
     <script>
         // Define the base URL for your Render.com backend API
@@ -834,6 +935,7 @@
 
         /**
          * Filters and displays channels based on the search input.
+         * @returns {void}
          */
         function searchChannels() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
@@ -851,16 +953,25 @@
             renderChannels(filteredChannels);
         }
 
+        /**
+         * Toggles the visibility of the instructions section.
+         */
+        function toggleInstructions() {
+            const instructionsSection = document.getElementById('instructionsSection');
+            const toggleButton = document.getElementById('toggleInstructionsBtn');
+
+            if (instructionsSection.classList.contains('show')) {
+                instructionsSection.classList.remove('show');
+                toggleButton.textContent = 'Pokaż instrukcję';
+            } else {
+                instructionsSection.classList.add('show');
+                toggleButton.textContent = 'Ukryj instrukcję';
+            }
+        }
+
         // Initialization logic: Load channels when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             loadChannels();
-
-            // Add enter key listener for search input
-            document.getElementById('searchInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchChannels();
-                }
-            });
         });
     </script>
 </body>
