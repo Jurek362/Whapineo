@@ -71,7 +71,7 @@
             border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s ease;
-            /* Remove fixed max-width for better responsiveness */
+            /* Removed fixed max-width for better responsiveness */
         }
 
         .search-input:focus {
@@ -437,6 +437,9 @@
     <div id="notification" class="notification"></div>
 
     <script>
+        // Define the base URL for your Render.com backend API
+        const API_BASE_URL = 'https://whapineobackend.onrender.com'; // YOUR RENDER BACKEND URL HERE
+
         let channels = []; // Stores the current list of channels
         let currentRating = {}; // Stores user's temporary rating selection per channel
 
@@ -470,7 +473,8 @@
             `; // Show loading spinner
 
             try {
-                const response = await fetch('/api/channels');
+                // Use the API_BASE_URL for fetching channels
+                const response = await fetch(`${API_BASE_URL}/api/channels`);
                 if (response.ok) {
                     channels = await response.json();
                     renderChannels(); // Render fetched channels
@@ -577,7 +581,8 @@
             const rating = parseInt(e.target.dataset.rating);
 
             try {
-                const response = await fetch(`/api/channels/${channelId}/rate`, {
+                // Use API_BASE_URL for rating submission
+                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/rate`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ rating: rating })
@@ -648,7 +653,8 @@
             }
 
             try {
-                const response = await fetch(`/api/channels/${channelId}/comments`, {
+                // Use API_BASE_URL for comment submission
+                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/comments`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ text: text, author: "Użytkownik" }) // 'Użytkownik' can be replaced with actual user name
@@ -694,7 +700,8 @@
             };
 
             try {
-                const response = await fetch('/api/channels', {
+                // Use API_BASE_URL for adding channel
+                const response = await fetch(`${API_BASE_URL}/api/channels`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(newChannelData)
