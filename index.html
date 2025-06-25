@@ -71,7 +71,6 @@
             border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s ease;
-            /* Removed fixed max-width for better responsiveness */
         }
 
         .search-input:focus {
@@ -155,21 +154,27 @@
             font-weight: bold;
             font-size: 18px;
             margin-right: 15px;
-            flex-shrink: 0; /* Prevent shrinking */
+            flex-shrink: 0;
         }
 
         .channel-info h3 {
             font-size: 1.3em;
             margin-bottom: 5px;
             color: #333;
-            word-break: break-word; /* Ensure long names wrap */
+            word-break: break-word;
+        }
+
+        .channel-info p { /* For follower count */
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 5px;
         }
 
         .channel-description {
             color: #666;
             margin-bottom: 15px;
             line-height: 1.5;
-            flex-grow: 1; /* Allows description to take available space */
+            flex-grow: 1;
         }
 
         /* Rating Section */
@@ -330,7 +335,7 @@
             font-weight: bold;
             z-index: 1000;
             transform: translateX(400px);
-            transition: transform 0.3s ease-out; /* Adjusted transition for smoother slide */
+            transition: transform 0.3s ease-out;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
@@ -362,16 +367,16 @@
             }
 
             .search-input {
-                max-width: 100%; /* Adjust for small screens */
+                max-width: 100%;
             }
 
             .btn {
                 width: 100%;
-                margin-top: 10px; /* Add margin for stacked buttons */
+                margin-top: 10px;
             }
 
             .channels-grid {
-                grid-template-columns: 1fr; /* Single column on small screens */
+                grid-template-columns: 1fr;
             }
 
             .channel-card {
@@ -412,17 +417,10 @@
         <div class="add-channel-section">
             <h2>➕ Dodaj nowy kanał</h2>
             <div class="form-group">
-                <label for="channelName">Nazwa kanału:</label>
-                <input type="text" class="form-input" id="channelName" placeholder="Nazwa kanału WhatsApp" required>
-            </div>
-            <div class="form-group">
-                <label for="channelDescription">Opis kanału:</label>
-                <textarea class="form-input" id="channelDescription" placeholder="Opisz kanał..." rows="3" required></textarea>
-            </div>
-            <div class="form-group">
                 <label for="channelLink">Link do kanału:</label>
-                <input type="url" class="form-input" id="channelLink" placeholder="https://chat.whatsapp.com/..." required>
+                <input type="url" class="form-input" id="channelLink" placeholder="https://whatsapp.com/channel/..." required>
             </div>
+            <!-- Usunięto pole opisu kanału, będzie pobierane z web scrapingu -->
             <button class="btn btn-success" onclick="addChannel()">Dodaj kanał</button>
         </div>
 
@@ -438,10 +436,9 @@
 
     <script>
         // Define the base URL for your Render.com backend API
-        const API_BASE_URL = 'https://whapineobackend.onrender.com'; // YOUR RENDER BACKEND URL HERE
+        const API_BASE_URL = 'https://whapineobackend.onrender.com'; // Your Render backend URL here
 
         let channels = []; // Stores the current list of channels
-        let currentRating = {}; // Stores user's temporary rating selection per channel
 
         /**
          * Displays a temporary notification message on the screen.
@@ -473,7 +470,6 @@
             `; // Show loading spinner
 
             try {
-                // Use the API_BASE_URL for fetching channels
                 const response = await fetch(`${API_BASE_URL}/api/channels`);
                 if (response.ok) {
                     channels = await response.json();
@@ -509,6 +505,7 @@
                         <div class="channel-avatar">${channel.name.charAt(0).toUpperCase()}</div>
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
+                            <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' obserwujących' : 'Brak danych o obserwujących'}</p>
                         </div>
                     </div>
 
@@ -563,7 +560,6 @@
          */
         function generateStars(channelId, rating) {
             let starsHTML = '';
-            // Round the rating to the nearest whole number for active stars
             const roundedRating = Math.round(rating);
             for (let i = 1; i <= 5; i++) {
                 const isActive = i <= roundedRating;
@@ -581,7 +577,6 @@
             const rating = parseInt(e.target.dataset.rating);
 
             try {
-                // Use API_BASE_URL for rating submission
                 const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/rate`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -590,7 +585,7 @@
 
                 if (response.ok) {
                     showNotification('Dziękujemy za ocenę!');
-                    loadChannels(); // Reload channels to show updated rating
+                    loadChannels();
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania oceny', 'error');
@@ -612,9 +607,9 @@
 
             stars.forEach((star, index) => {
                 if (index < hoveredRating) {
-                    star.style.color = '#ffd700'; // Highlight on hover
+                    star.style.color = '#ffd700';
                 } else {
-                    star.style.color = '#ddd'; // Dim non-hovered stars
+                    star.style.color = '#ddd';
                 }
             });
         }
@@ -631,13 +626,12 @@
 
             stars.forEach((star, index) => {
                 if (index < Math.round(currentAvgRating)) {
-                    star.style.color = '#ffd700'; // Keep active color
+                    star.style.color = '#ffd700';
                 } else {
-                    star.style.color = '#ddd'; // Revert to default color
+                    star.style.color = '#ddd';
                 }
             });
         }
-
 
         /**
          * Adds a new comment to a channel.
@@ -653,17 +647,16 @@
             }
 
             try {
-                // Use API_BASE_URL for comment submission
                 const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/comments`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ text: text, author: "Użytkownik" }) // 'Użytkownik' can be replaced with actual user name
+                    body: JSON.stringify({ text: text, author: "Użytkownik" })
                 });
 
                 if (response.ok) {
-                    textarea.value = ''; // Clear textarea
+                    textarea.value = '';
                     showNotification('Komentarz został dodany!');
-                    loadChannels(); // Reload channels to show new comment
+                    loadChannels();
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania komentarza', 'error');
@@ -678,29 +671,19 @@
          * Adds a new WhatsApp channel to the database.
          */
         async function addChannel() {
-            const name = document.getElementById('channelName').value.trim();
-            const description = document.getElementById('channelDescription').value.trim();
+            // Description field is removed, it will be scraped by the backend
             const link = document.getElementById('channelLink').value.trim();
 
-            if (!name || !description || !link) {
-                showNotification('Proszę wypełnić wszystkie pola', 'error');
-                return;
-            }
-
-            // Basic link validation for WhatsApp invite link
-            if (!link.startsWith('https://chat.whatsapp.com/')) {
-                showNotification('Link do kanału musi zaczynać się od "https://chat.whatsapp.com/"', 'error');
+            if (!link) {
+                showNotification('Pole \'link\' jest wymagane.', 'error');
                 return;
             }
 
             const newChannelData = {
-                name: name,
-                description: description,
                 link: link
             };
 
             try {
-                // Use API_BASE_URL for adding channel
                 const response = await fetch(`${API_BASE_URL}/api/channels`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -708,11 +691,9 @@
                 });
 
                 if (response.ok) {
-                    document.getElementById('channelName').value = '';
-                    document.getElementById('channelDescription').value = '';
                     document.getElementById('channelLink').value = '';
                     showNotification('Kanał został dodany!');
-                    loadChannels(); // Reload channels to show the new one
+                    loadChannels();
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania kanału', 'error');
@@ -730,7 +711,7 @@
             const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
 
             if (!searchTerm) {
-                renderChannels(channels); // If search term is empty, show all channels
+                renderChannels(channels);
                 return;
             }
 
@@ -744,7 +725,7 @@
 
         // Initialization logic: Load channels when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', function() {
-            loadChannels(); // Initial load of channels
+            loadChannels();
 
             // Add enter key listener for search input
             document.getElementById('searchInput').addEventListener('keypress', function(e) {
