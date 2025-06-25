@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whapineo Admin Panel</title>
+    <style>
+        /* General styles, re-using some from main app for consistency */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a4d3a 50%, #2d5a2d 100%);
+            min-height: 100vh;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #1a4d3a;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .auth-section, .admin-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            border: 1px solid #eee;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2d5a2d;
+            box-shadow: 0 0 10px rgba(45, 90, 45, 0.3);
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #1a4d3a, #2d5a2d);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26, 77, 58, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-warning { /* New button style for "Clear All" */
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            color: white;
+        }
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+        }
+
+        .channel-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        .channel-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            background: #fdfdfd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+
+        .channel-item:last-child {
+            border-bottom: none;
+        }
+
+        .channel-item-info {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .channel-item-info h4 {
+            margin: 0;
+            color: #333;
+            font-size: 1.1em;
+            word-break: break-word;
+        }
+
+        .channel-item-info p {
+            margin: 5px 0 0;
+            font-size: 0.9em;
+            color: #666;
+            word-break: break-word;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-out;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+        }
+
+        .notification.error {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2d5a2d;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            .form-input, .btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+            .channel-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .channel-item-info {
+                margin-bottom: 10px;
+            }
+            .btn-danger {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Panel Administratora Whapineo</h1>
+
+        <div id="authSection" class="auth-section">
+            <h2>Wprowadź Hasła Administratora</h2>
+            <div class="form-group">
+                <label for="passwordOne">Hasło 1:</label>
+                <input type="password" class="form-input" id="passwordOne" required>
+            </div>
+            <div class="form-group">
+                <label for="passwordTwo">Hasło 2:</label>
+                <input type="password" class="form-input" id="passwordTwo" required>
+            </div>
+            <button class="btn btn-primary" onclick="verifyPasswords()">Zaloguj się</button>
+            <!-- Ostrzeżenie o hasłach zostało usunięte zgodnie z życzeniem użytkownika -->
+        </div>
+
+        <div id="adminContent" class="admin-content" style="display: none;">
+            <h2>Zarządzanie Kanałami</h2>
+            <div id="channelsAdminList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ładowanie kanałów...</p>
+                </div>
+            </div>
+            <button class="btn btn-warning" onclick="confirmClearAllChannels()" style="margin-top: 20px;">Wyczyść Wszystkie Kanały</button>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        const API_BASE_URL = 'https://whapineobackend.onrender.com'; // Your Render backend URL here
+        let adminToken = null; // Stores the token received after successful login
+
+        /**
+         * Displays a temporary notification message on the screen.
+         * @param {string} message The message to display.
+         * @param {string} type The type of notification ('success' or 'error').
+         */
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        /**
+         * Verifies the entered passwords to grant access to the admin panel.
+         */
+        async function verifyPasswords() {
+            const passOne = document.getElementById('passwordOne').value;
+            const passTwo = document.getElementById('passwordTwo').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ passwordOne: passOne, passwordTwo: passTwo })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    adminToken = data.token; // Store the received token
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('adminContent').style.display = 'block';
+                    loadAdminChannels();
+                    showNotification('Logowanie udane!', 'success');
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Nieprawidłowe hasła. Spróbuj ponownie.', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd logowania administratora:', error);
+                showNotification('Błąd połączenia z serwerem podczas logowania.', 'error');
+            }
+        }
+
+        /**
+         * Loads channels for the admin panel.
+         */
+        async function loadAdminChannels() {
+            const channelsAdminList = document.getElementById('channelsAdminList');
+            channelsAdminList.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ładowanie kanałów do zarządzania...</p>
+                </div>
+            `;
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/channels`);
+                if (response.ok) {
+                    const channels = await response.json();
+                    renderAdminChannels(channels);
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas ładowania kanałów do zarządzania', 'error');
+                    channelsAdminList.innerHTML = '<p style="color: #e74c3c;">Nie udało się załadować kanałów do zarządzania.</p>';
+                }
+            } catch (error) {
+                console.error('Błąd podczas ładowania kanałów do zarządzania:', error);
+                showNotification('Błąd połączenia z serwerem podczas ładowania kanałów do zarządzania.', 'error');
+                channelsAdminList.innerHTML = '<p style="color: #e74c3c;">Brak połączenia z serwerem.</p>';
+            }
+        }
+
+        /**
+         * Renders channels in the admin panel with delete buttons.
+         * @param {Array} channels The array of channel objects to display.
+         */
+        function renderAdminChannels(channels) {
+            const channelsAdminList = document.getElementById('channelsAdminList');
+            if (channels.length === 0) {
+                channelsAdminList.innerHTML = '<p>Brak kanałów do zarządzania.</p>';
+                return;
+            }
+
+            const listHTML = channels.map(channel => `
+                <li class="channel-item">
+                    <div class="channel-item-info">
+                        <h4>${channel.name}</h4>
+                        <p>${channel.description}</p>
+                        <p>Link: <a href="${channel.link}" target="_blank">${channel.link}</a></p>
+                        <p>Obserwujących: ${channel.followerCount !== undefined ? channel.followerCount : 0}</p>
+                        <p>Ocena: ${channel.rating.toFixed(1)}/5 (${channel.ratingsCount} ocen)</p>
+                        <p>ID: ${channel.id}</p>
+                    </div>
+                    <button class="btn btn-danger" onclick="confirmDeleteChannel(${channel.id}, '${channel.name}')">Usuń</button>
+                </li>
+            `).join('');
+            channelsAdminList.innerHTML = `<ul class="channel-list">${listHTML}</ul>`;
+        }
+
+        /**
+         * Confirms deletion with the user.
+         * @param {number} channelId The ID of the channel to delete.
+         * @param {string} channelName The name of the channel for confirmation message.
+         */
+        function confirmDeleteChannel(channelId, channelName) {
+            if (!adminToken) {
+                showNotification('Błąd autoryzacji: Brak tokena administratora.', 'error');
+                return;
+            }
+            if (confirm(`Czy na pewno chcesz usunąć kanał "${channelName}" (ID: ${channelId})? To jest nieodwracalne!`)) {
+                deleteChannel(channelId);
+            }
+        }
+
+        /**
+         * Sends a DELETE request to remove a channel.
+         * @param {number} channelId The ID of the channel to delete.
+         */
+        async function deleteChannel(channelId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}` // Include the token
+                    }
+                });
+
+                if (response.ok) {
+                    showNotification(`Kanał o ID ${channelId} został usunięty.`, 'success');
+                    loadAdminChannels(); // Reload the list after deletion
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || `Błąd podczas usuwania kanału o ID ${channelId}`, 'error');
+                }
+            }
+            catch (error) {
+                console.error(`Błąd podczas usuwania kanału o ID ${channelId}:`, error);
+                showNotification('Błąd połączenia z serwerem podczas usuwania kanału.', 'error');
+            }
+        }
+
+        /**
+         * Confirms clearing all channels with the user.
+         */
+        function confirmClearAllChannels() {
+            if (!adminToken) {
+                showNotification('Błąd autoryzacji: Brak tokena administratora.', 'error');
+                return;
+            }
+            if (confirm('Jesteś pewien, że chcesz usunąć WSZYSTKIE kanały i komentarze? To jest nieodwracalne!')) {
+                clearAllChannels();
+            }
+        }
+
+        /**
+         * Sends a DELETE request to clear all channels.
+         */
+        async function clearAllChannels() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/channels/all`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}` // Include the token
+                    }
+                });
+
+                if (response.ok) {
+                    showNotification('Wszystkie kanały i komentarze zostały usunięte.', 'success');
+                    loadAdminChannels(); // Reload the list (it should now be empty)
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas czyszczenia wszystkich kanałów.', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas czyszczenia wszystkich kanałów:', error);
+                showNotification('Błąd połączenia z serwerem podczas czyszczenia wszystkich kanałów.', 'error');
+            }
+        }
+
+        // Initialize admin panel
+        document.addEventListener('DOMContentLoaded', function() {
+            // No initial load, wait for password verification
+        });
+    </script>
+</body>
+</html>
