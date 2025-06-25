@@ -473,6 +473,6 @@ def delete_all_data_development_only():
 if __name__ == '__main__':
     # Aby wyczyścić bazę danych podczas lokalnego uruchomienia, odkomentuj poniższą linię:
     # WARNING: To usunie WSZYSTKIE dane! Używaj tylko w celach deweloperskich/testowych!
-    # delete_all_data_development_only()
+    delete_all_data_development_only()
 
     app.run(debug=True, port=5000)
