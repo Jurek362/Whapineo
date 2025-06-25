@@ -10,6 +10,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from flask_cors import CORS
 from urllib.parse import urlparse
+import re # For regular expressions to parse follower count
 
 # Load environment variables from .env file (for local development)
 load_dotenv()
@@ -42,15 +43,16 @@ def initialize_db():
         cur = conn.cursor()
 
         # Create channels table with follower_count
+        # Ensure 'description' column exists, which it already does.
         cur.execute("""
             CREATE TABLE IF NOT EXISTS channels (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                description TEXT,
+                description TEXT, -- Description column already exists
                 link VARCHAR(255) NOT NULL UNIQUE,
                 average_rating REAL DEFAULT 0.0,
                 ratings_count INTEGER DEFAULT 0,
-                follower_count INTEGER DEFAULT 0, -- Now includes follower count
+                follower_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -88,82 +90,100 @@ except Exception as e:
 
 def fetch_channel_details_from_whatsapp_page(url):
     """
-    Attempts to scrape channel name and follower count from the WhatsApp channel URL.
+    Attempts to scrape channel name, description, and follower count from the WhatsApp channel URL.
     WARNING: This approach is highly unreliable for dynamic websites like WhatsApp.
     WhatsApp uses JavaScript to render content and has strong anti-scraping measures.
     This function is for demonstration/attempt purposes.
     It is likely to be blocked or return incomplete data.
     """
     channel_name = None
-    follower_count = 0 # Default to 0 if unable to scrape
+    channel_description = None # New: for description
+    follower_count = 0
 
     try:
-        # Use a common User-Agent to mimic a browser
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36'
         }
-        # Set a timeout for the request
         response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # --- Attempt to find Channel Name ---
-        # Based on common HTML structures or the provided screenshot, try to find a title.
-        # This is highly speculative and prone to breakage.
-        # WhatsApp pages often load this dynamically, so it might not be in the initial HTML.
-        name_tag = soup.find('meta', property='og:title') # Open Graph title
+        name_tag = soup.find('meta', property='og:title')
         if name_tag and name_tag.get('content'):
             channel_name = name_tag['content'].strip()
         else:
-            # Fallback to looking for h1, h2, or other prominent text
-            name_tag = soup.find('h1', class_='_aj1s') # Example based on some WhatsApp web elements
+            # Fallback for name - often in <title> or <h1>
+            name_tag = soup.find('h1', class_='_aj1s') # Specific class from inspecting WhatsApp web
             if name_tag:
                  channel_name = name_tag.get_text().strip()
             elif soup.find('title'):
                  channel_name = soup.find('title').get_text().replace(' | WhatsApp Channel', '').strip()
+            if not channel_name: # Fallback to generic "WhatsApp Channel" if nothing found
+                channel_name = "WhatsApp Channel"
+
+
+        # --- Attempt to find Channel Description ---
+        # Descriptions are highly variable. Try Open Graph first, then common HTML tags.
+        description_tag = soup.find('meta', property='og:description')
+        if description_tag and description_tag.get('content'):
+            channel_description = description_tag['content'].strip()
+        else:
+            # Look for common paragraph or div tags near the name
+            # This is even more speculative and likely to fail
+            desc_tag = soup.find('span', {'dir': 'ltr', 'class': '_al_r'}) # Example based on some WhatsApp web elements
+            if desc_tag:
+                channel_description = desc_tag.get_text().strip()
+            elif soup.find('p', class_='_aj1s'): # Another potential common text element
+                 channel_description = soup.find('p', class_='_aj1s').get_text().strip()
+
+        if not channel_description:
+            channel_description = "Brak dostępnego opisu." # Default description if not found
+
 
         # --- Attempt to find Follower Count ---
-        # This is even more difficult as it's almost certainly loaded via JavaScript.
-        # We're looking for specific text patterns or elements that contain numbers.
-        # The screenshot shows "150 obserwujących", so we'll look for similar patterns.
-        # Again, highly unreliable for dynamic content.
-        follower_element = soup.find(text=lambda text: text and "obserwujący" in text.lower())
+        follower_element = soup.find(text=lambda text: text and ("obserwujący" in text.lower() or "followers" in text.lower()))
         if follower_element:
             try:
-                # Try to extract number before "obserwujących"
                 text_with_followers = follower_element.strip()
-                # Use regex to find digits
-                import re
-                match = re.search(r'(\d+)\s*obserwuj', text_with_followers, re.IGNORECASE)
+                # Use regex to find digits (e.g., "150 obserwujących", "1.2K followers")
+                match = re.search(r'(\d+(?:[.,]\d+)?)([KMBT]?)?\s*(obserwuj|follow)', text_with_followers, re.IGNORECASE)
                 if match:
-                    follower_count = int(match.group(1))
+                    num_str = match.group(1).replace(',', '.') # Handle comma for decimal
+                    num = float(num_str)
+                    multiplier = 1
+                    unit = (match.group(2) or '').upper()
+                    if unit == 'K':
+                        multiplier = 1000
+                    elif unit == 'M':
+                        multiplier = 1000000
+                    elif unit == 'B':
+                        multiplier = 1000000000
+                    elif unit == 'T': # Not typical for followers, but for completeness
+                        multiplier = 1000000000000
+                    follower_count = int(num * multiplier)
             except ValueError:
-                print(f"DEBUG: Could not parse follower count from: {text_with_followers}")
-                pass # Continue with default 0
-
-        if not channel_name:
-            # As a last resort, use the ID from the URL if scraping failed
-            parsed_url = urlparse(url)
-            channel_name = parsed_url.path.strip('/').split('/')[-1]
-            print(f"DEBUG: Scraped channel name is None, falling back to URL ID: {channel_name}")
+                print(f"DEBUG: Could not parse follower count from: '{text_with_followers}'")
+                pass
 
     except requests.exceptions.RequestException as req_err:
         print(f"ERROR: HTTP/Request error while fetching {url}: {req_err}")
-        # Use the ID from the URL as a fallback name if request fails
+        # Fallback names/descriptions if request fails
         parsed_url = urlparse(url)
-        channel_name = parsed_url.path.strip('/').split('/')[-1]
-        follower_count = 0 # Ensure follower_count is 0 on error
+        channel_name = parsed_url.path.strip('/').split('/')[-1] # Fallback to ID
+        channel_description = "Nie udało się pobrać opisu z powodu błędu połączenia."
+        follower_count = 0
     except Exception as e:
         print(f"ERROR: General error during scraping {url}: {e}")
-        # Use the ID from the URL as a fallback name if scraping fails
+        # Fallback names/descriptions if scraping fails
         parsed_url = urlparse(url)
-        channel_name = parsed_url.path.strip('/').split('/')[-1]
-        follower_count = 0 # Ensure follower_count is 0 on error
+        channel_name = parsed_url.path.strip('/').split('/')[-1] # Fallback to ID
+        channel_description = "Nie udało się pobrać opisu z powodu błędu parsowania."
+        follower_count = 0
 
-
-    print(f"DEBUG: Scraped results for {url}: Name='{channel_name}', Followers={follower_count}")
-    return {"name": channel_name, "follower_count": follower_count}
+    print(f"DEBUG: Scraped results for {url}: Name='{channel_name}', Description='{channel_description}', Followers={follower_count}")
+    return {"name": channel_name, "description": channel_description, "follower_count": follower_count}
 
 
 @app.route('/')
@@ -202,7 +222,7 @@ def get_channels():
                 'link': channel[3],
                 'rating': channel[4] if channel[4] is not None else 0.0,
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
-                'followerCount': channel[6] if channel[6] is not None else 0, # Include follower_count
+                'followerCount': channel[6] if channel[6] is not None else 0,
                 'comments': comments_list
             })
         return jsonify(channels_list)
@@ -217,32 +237,23 @@ def get_channels():
 
 @app.route('/api/channels', methods=['POST'])
 def add_channel():
-    """Dodaje nowy kanał do bazy danych, próbując pobrać nazwę i liczbę obserwujących z linku."""
+    """Dodaje nowy kanał do bazy danych, próbując pobrać nazwę, opis i liczbę obserwujących z linku."""
     data = request.get_json()
-    description = data.get('description')
-    link = data.get('link')
+    link = data.get('link') # Only link is expected from frontend now
 
-    if not description or not link:
-        return jsonify({"error": "Pola 'opis' i 'link' są wymagane."}), 400
+    if not link:
+        return jsonify({"error": "Pole 'link' jest wymagane."}), 400
 
-    # Walidacja linku WhatsApp
+    # Validate WhatsApp link
     parsed_url = urlparse(link)
     if not (parsed_url.netloc.endswith('whatsapp.com') and parsed_url.path.startswith('/channel/')):
         return jsonify({"error": "Nieprawidłowy format linku kanału WhatsApp. Oczekiwany format: https://whatsapp.com/channel/..."}), 400
 
-    # Próba wyodrębnienia nazwy z linku jako ID kanału
-    channel_id_from_link = parsed_url.path.strip('/').split('/')[-1]
-    if not channel_id_from_link:
-        return jsonify({"error": "Nie można wyodrębnić nazwy kanału (ID) z podanego linku."}), 400
-
-    # --- Próba scrapingu danych z faktycznej strony kanału ---
+    # Attempt to scrape details from the actual channel page
     scraped_data = fetch_channel_details_from_whatsapp_page(link)
-    name = scraped_data['name'] if scraped_data['name'] else channel_id_from_link # Fallback to ID if scraping name fails
+    name = scraped_data['name']
+    description = scraped_data['description']
     follower_count = scraped_data['follower_count']
-
-    # Jeśli scraping nazwy się nie powiedzie, użyjemy ID z linku jako nazwę
-    if not name:
-        name = channel_id_from_link
 
 
     conn = None
@@ -252,11 +263,11 @@ def add_channel():
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO channels (name, description, link, follower_count) VALUES (%s, %s, %s, %s) RETURNING id;",
-            (name, description, link, follower_count) # Now inserting follower_count
+            (name, description, link, follower_count) # Now inserting description and follower_count
         )
         channel_id = cur.fetchone()[0]
         conn.commit()
-        return jsonify({"message": "Kanał dodany pomyślnie", "id": channel_id, "name": name, "followerCount": follower_count}), 201
+        return jsonify({"message": "Kanał dodany pomyślnie", "id": channel_id, "name": name, "description": description, "followerCount": follower_count}), 201
     except psycopg2.errors.UniqueViolation:
         if conn:
             conn.rollback()
