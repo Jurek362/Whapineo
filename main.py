@@ -445,5 +445,34 @@ def add_comment_to_channel(channel_id):
         if conn:
             conn.close()
 
+# --- Funkcja do kasowania WSZYSTKICH danych (tylko dla DEVELOPMENTU!) ---
+def delete_all_data_development_only():
+    """
+    USUWA WSZYSTKIE DANE Z TABEL 'channels' i 'comments'.
+    TO JEST FUNKCJA DEWELOPERSKA I NIGDY NIE POWINNA BYĆ UŻYWANA W PRODUKCJI.
+    """
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM comments;")
+        cur.execute("DELETE FROM channels;")
+        conn.commit()
+        print("SUKCES: Wszystkie dane z tabel 'channels' i 'comments' zostały usunięte.")
+    except Exception as e:
+        print(f"BŁĄD: Nie udało się usunąć wszystkich danych: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 if __name__ == '__main__':
+    # Aby wyczyścić bazę danych podczas lokalnego uruchomienia, odkomentuj poniższą linię:
+    # WARNING: To usunie WSZYSTKIE dane! Używaj tylko w celach deweloperskich/testowych!
+    # delete_all_data_development_only()
+
     app.run(debug=True, port=5000)
