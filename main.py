@@ -209,8 +209,8 @@ def add_comment_to_channel(channel_id):
 
     conn = None
     try:
-        conn = get_db_connection() hi
-        cur = conn.cursorhi
+        conn = get_db_connection()
+        cur = conn.cursor
         cur.execute(
             "INSERT INTO comments (channel_id, author, text) VALUES (%s, %s, %s);",
             (channel_id, author, text)
