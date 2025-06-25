@@ -5,8 +5,9 @@ import json
 import psycopg2
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify # Removed make_response
 from datetime import datetime
+import time # Import time for epoch timestamps
 from dotenv import load_dotenv
 from flask_cors import CORS
 from urllib.parse import urlparse
@@ -33,6 +34,9 @@ ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token')
 # --- WhatsApp Specific Constants ---
 # Default profile image URL that indicates a non-existent or inaccessible channel
 WHATSAPP_DEFAULT_PROFILE_IMAGE = "https://static.whatsapp.net/rsrc.php/v4/yo/r/J5gK5AgJ_L5.png"
+
+# --- Rating Limit Constants (No longer directly used by backend for cookie logic) ---
+# ONE_DAY_IN_SECONDS = 24 * 60 * 60 # This constant will now only be relevant for the frontend logic
 
 def verify_admin_token(request_headers):
     """Verifies if the request contains the correct admin authentication token."""
@@ -405,12 +409,15 @@ def clear_all_channels():
 
 @app.route('/api/channels/<int:channel_id>/rate', methods=['POST'])
 def rate_channel(channel_id):
-    """Przesyła ocenę dla kanału i aktualizuje jego średnią ocenę."""
+    """Przesyła ocenę dla kanału i aktualizuje jego średnią ocenę. Limit oceniania obsługiwany jest po stronie klienta."""
     data = request.get_json()
     rating = data.get('rating')
 
     if rating is None or not (1 <= rating <= 5):
         return jsonify({"error": "Ocena musi być liczbą od 1 do 5."}), 400
+
+    # --- Usunięto logikę limitu oceniania opartą na cookies z backendu.
+    # --- Limit oceniania jest teraz w pełni obsługiwany po stronie klienta (frontend - localStorage).
 
     conn = None
     cur = None
@@ -436,7 +443,13 @@ def rate_channel(channel_id):
             (new_avg_rating, new_ratings_count, channel_id)
         )
         conn.commit()
-        return jsonify({"message": "Ocena dodana pomyślnie", "new_average_rating": new_avg_rating, "new_ratings_count": new_ratings_count}), 200
+
+        # Backend zwraca prostą odpowiedź JSON, bez manipulacji cookie
+        return jsonify({
+            "message": "Ocena dodana pomyślnie",
+            "new_average_rating": new_avg_rating,
+            "new_ratings_count": new_ratings_count
+        }), 200
     except Exception as e:
         print(f"ERROR: Błąd podczas oceniania kanału {channel_id}: {e}")
         if conn:
