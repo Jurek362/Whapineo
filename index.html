@@ -111,6 +111,15 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
         }
+        
+        .btn.disabled { /* Style for disabled buttons */
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+            transform: none;
+        }
+
 
         /* Channels Grid */
         .channels-grid {
@@ -209,6 +218,11 @@
         .star.active, .star:hover {
             color: #ffd700;
             transform: scale(1.1);
+        }
+        
+        .stars.disabled .star { /* Style for disabled stars */
+            cursor: not-allowed;
+            opacity: 0.5;
         }
 
         .rating-info {
@@ -449,6 +463,48 @@
         const API_BASE_URL = 'https://whapineobackend.onrender.com'; // Your Render backend URL here
 
         let channels = []; // Stores the current list of channels
+        const ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+        /**
+         * Reads the rated channels data from localStorage.
+         * @returns {Object} An object mapping channel IDs to their last rating timestamp.
+         */
+        function getRatedChannelsFromLocalStorage() {
+            try {
+                const data = localStorage.getItem('rated_channels');
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                console.error("Error parsing localStorage 'rated_channels':", e);
+                return {}; // Return empty object if parsing fails
+            }
+        }
+
+        /**
+         * Saves the rated channels data to localStorage.
+         * @param {Object} data The object to save.
+         */
+        function setRatedChannelsToLocalStorage(data) {
+            try {
+                localStorage.setItem('rated_channels', JSON.stringify(data));
+            } catch (e) {
+                console.error("Error saving to localStorage 'rated_channels':", e);
+            }
+        }
+
+        /**
+         * Checks if a channel can be rated based on localStorage data.
+         * @param {number} channelId The ID of the channel to check.
+         * @returns {boolean} True if the channel can be rated, false otherwise.
+         */
+        function canRateChannel(channelId) {
+            const ratedChannels = getRatedChannelsFromLocalStorage();
+            const lastRatedTime = ratedChannels[channelId];
+            if (!lastRatedTime) {
+                return true; // Not rated before
+            }
+            const currentTime = Date.now(); // Current time in milliseconds
+            return (currentTime - lastRatedTime) >= ONE_DAY_IN_MILLISECONDS;
+        }
 
         /**
          * Displays a temporary notification message on the screen.
@@ -502,6 +558,7 @@
          */
         function renderChannels(channelsToRender = channels) {
             const container = document.getElementById('channelsContainer');
+            const ratedChannels = getRatedChannelsFromLocalStorage(); // Get current rated status
 
             if (channelsToRender.length === 0) {
                 container.innerHTML = '<div class="loading"><p>Nie znaleziono kanałów.</p></div>';
@@ -509,7 +566,11 @@
             }
 
             // Generate HTML for each channel card
-            const channelsHTML = channelsToRender.map(channel => `
+            const channelsHTML = channelsToRender.map(channel => {
+                const canRate = canRateChannel(channel.id);
+                const starsClass = canRate ? '' : 'disabled';
+                
+                return `
                 <div class="channel-card">
                     <div class="channel-header">
                         <div class="channel-avatar">
@@ -524,8 +585,8 @@
                     <div class="channel-description">${channel.description}</div>
 
                     <div class="rating-section">
-                        <div class="stars" data-channel-id="${channel.id}" data-current-rating="${channel.rating}">
-                            ${generateStars(channel.id, channel.rating)}
+                        <div class="stars ${starsClass}" data-channel-id="${channel.id}" data-current-rating="${channel.rating}">
+                            ${generateStars(channel.id, channel.rating, !canRate)}
                         </div>
                         <div class="rating-info">
                             <span>Średnia ocena: ${channel.rating !== undefined ? channel.rating.toFixed(1) : '0.0'}/5</span>
@@ -552,15 +613,19 @@
 
                     <a href="${channel.link}" target="_blank" class="btn btn-success" style="margin-top: 15px; display: inline-block; text-decoration: none;">Dołącz do kanału</a>
                 </div>
-            `).join('');
+                `;
+            }).join('');
 
             container.innerHTML = `<div class="channels-grid">${channelsHTML}</div>`;
 
             // Add event listeners for stars after rendering
             document.querySelectorAll('.star').forEach(star => {
-                star.addEventListener('click', handleStarClick);
-                star.addEventListener('mouseover', handleStarHover);
-                star.addEventListener('mouseout', handleStarOut);
+                const starsContainer = star.closest('.stars');
+                if (!starsContainer.classList.contains('disabled')) { // Only add listeners if not disabled
+                    star.addEventListener('click', handleStarClick);
+                    star.addEventListener('mouseover', handleStarHover);
+                    star.addEventListener('mouseout', handleStarOut);
+                }
             });
         }
 
@@ -568,14 +633,16 @@
          * Generates the HTML for star ratings.
          * @param {number} channelId The ID of the channel.
          * @param {number} rating The current average rating of the channel.
+         * @param {boolean} isDisabled Whether the stars should be disabled.
          * @returns {string} HTML string for the stars.
          */
-        function generateStars(channelId, rating) {
+        function generateStars(channelId, rating, isDisabled = false) {
             let starsHTML = '';
             const roundedRating = Math.round(rating);
             for (let i = 1; i <= 5; i++) {
                 const isActive = i <= roundedRating;
-                starsHTML += `<span class="star ${isActive ? 'active' : ''}" data-channel-id="${channelId}" data-rating="${i}">★</span>`;
+                const disabledAttr = isDisabled ? 'disabled' : '';
+                starsHTML += `<span class="star ${isActive ? 'active' : ''}" data-channel-id="${channelId}" data-rating="${i}" ${disabledAttr}>★</span>`;
             }
             return starsHTML;
         }
@@ -588,6 +655,11 @@
             const channelId = e.target.dataset.channelId;
             const rating = parseInt(e.target.dataset.rating);
 
+            if (!canRateChannel(channelId)) {
+                showNotification('Możesz ocenić ten kanał tylko raz na 24 godziny.', 'error');
+                return; // Stop if already rated today
+            }
+
             try {
                 const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/rate`, {
                     method: 'POST',
@@ -597,7 +669,11 @@
 
                 if (response.ok) {
                     showNotification('Dziękujemy za ocenę!');
-                    loadChannels();
+                    // Update localStorage after successful rating
+                    const ratedChannels = getRatedChannelsFromLocalStorage();
+                    ratedChannels[channelId] = Date.now(); // Store current timestamp
+                    setRatedChannelsToLocalStorage(ratedChannels);
+                    loadChannels(); // Reload channels to update UI (disable stars)
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania oceny', 'error');
@@ -613,8 +689,10 @@
          * @param {Event} e The mouseover event.
          */
         function handleStarHover(e) {
-            const hoveredRating = parseInt(e.target.dataset.rating);
             const starsContainer = e.target.parentElement;
+            if (starsContainer.classList.contains('disabled')) return; // Do nothing if disabled
+
+            const hoveredRating = parseInt(e.target.dataset.rating);
             const stars = starsContainer.querySelectorAll('.star');
 
             stars.forEach((star, index) => {
@@ -632,6 +710,8 @@
          */
         function handleStarOut(e) {
             const starsContainer = e.target.parentElement;
+            if (starsContainer.classList.contains('disabled')) return; // Do nothing if disabled
+
             const channelId = starsContainer.dataset.channelId;
             const currentAvgRating = parseFloat(starsContainer.dataset.currentRating);
             const stars = starsContainer.querySelectorAll('.star');
@@ -683,7 +763,6 @@
          * Adds a new WhatsApp channel to the database.
          */
         async function addChannel() {
-            // Description field is removed, it will be scraped by the backend
             const link = document.getElementById('channelLink').value.trim();
 
             if (!link) {
