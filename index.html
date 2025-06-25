@@ -48,7 +48,7 @@
             font-size: 1.2em;
         }
 
-        /* Logo styling */
+        /* Logo styling for header */
         .header .logo {
             max-width: 150px; /* Adjust as needed */
             height: auto;
@@ -188,12 +188,24 @@
             object-fit: cover; /* Cover the avatar area */
         }
 
+        /* Logo styling for channel card */
+        .channel-card-logo {
+            width: 30px; /* Smaller size for card logo */
+            height: 30px;
+            margin-left: 10px; /* Space between name and logo */
+            border-radius: 5px; /* Slightly rounded corners */
+            vertical-align: middle; /* Align with text */
+            flex-shrink: 0;
+        }
 
         .channel-info h3 {
             font-size: 1.3em;
             margin-bottom: 5px;
             color: #333;
             word-break: break-word;
+            display: flex; /* Make h3 a flex container to align logo */
+            align-items: center; /* Vertically align items */
+            gap: 5px; /* Space between text and logo */
         }
 
         .channel-info p { /* For follower count */
@@ -590,7 +602,10 @@
                             ${channel.profileImageUrl ? `<img src="${channel.profileImageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/1a4d3a/ffffff?text=${channel.name.charAt(0).toUpperCase()}'" alt="Profil kanału">` : channel.name.charAt(0).toUpperCase()}
                         </div>
                         <div class="channel-info">
-                            <h3>${channel.name}</h3>
+                            <h3>
+                                ${channel.name}
+                                <img src="logo.png" alt="Logo Whapineo" class="channel-card-logo"> <!-- Dodane logo do karty kanału -->
+                            </h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' obserwujących' : 'Brak danych o obserwujących'}</p>
                         </div>
                     </div>
