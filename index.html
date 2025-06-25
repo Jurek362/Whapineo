@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whapineo - Oceny Kanałów WhatsApp</title>
+    <style>
+        /* General styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a4d3a 50%, #2d5a2d 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 3em;
+            color: white;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2em;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            /* Remove fixed max-width for better responsiveness */
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #2d5a2d;
+            box-shadow: 0 0 10px rgba(45, 90, 45, 0.3);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #1a4d3a, #2d5a2d);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26, 77, 58, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
+        }
+
+        /* Channels Grid */
+        .channels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .channel-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .channel-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .channel-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .channel-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #1a4d3a, #2d5a2d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 15px;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .channel-info h3 {
+            font-size: 1.3em;
+            margin-bottom: 5px;
+            color: #333;
+            word-break: break-word; /* Ensure long names wrap */
+        }
+
+        .channel-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            flex-grow: 1; /* Allows description to take available space */
+        }
+
+        /* Rating Section */
+        .rating-section {
+            margin-bottom: 20px;
+        }
+
+        .stars {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .star {
+            font-size: 24px;
+            color: #ddd;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .star.active, .star:hover {
+            color: #ffd700;
+            transform: scale(1.1);
+        }
+
+        .rating-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Comments Section */
+        .comments-section {
+            margin-top: 20px;
+        }
+
+        .comment-form {
+            margin-bottom: 20px;
+        }
+
+        .comment-textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .comment-textarea:focus {
+            outline: none;
+            border-color: #2d5a2d;
+        }
+
+        .comments-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .comment {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2d5a2d;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .comment:last-child {
+            margin-bottom: 0;
+        }
+
+        .comment-author {
+            font-weight: bold;
+            color: #1a4d3a;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+
+        .comment-date {
+            font-size: 12px;
+            color: #999;
+            float: right;
+        }
+
+        /* Add Channel Section */
+        .add-channel-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #2d5a2d;
+            box-shadow: 0 0 10px rgba(45, 90, 45, 0.3);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2d5a2d;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-out; /* Adjusted transition for smoother slide */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+        }
+
+        .notification.error {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.2em;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+
+            .search-box {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-input {
+                max-width: 100%; /* Adjust for small screens */
+            }
+
+            .btn {
+                width: 100%;
+                margin-top: 10px; /* Add margin for stacked buttons */
+            }
+
+            .channels-grid {
+                grid-template-columns: 1fr; /* Single column on small screens */
+            }
+
+            .channel-card {
+                padding: 20px;
+            }
+
+            .channel-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .channel-info h3 {
+                font-size: 1.1em;
+            }
+
+            .form-input, .comment-textarea {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Whapineo</h1>
+            <p>Odkryj i oceniaj najlepsze kanały WhatsApp</p>
+        </div>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="Szukaj kanałów WhatsApp...">
+                <button class="btn btn-primary" onclick="searchChannels()">Szukaj</button>
+            </div>
+        </div>
+
+        <div class="add-channel-section">
+            <h2>➕ Dodaj nowy kanał</h2>
+            <div class="form-group">
+                <label for="channelName">Nazwa kanału:</label>
+                <input type="text" class="form-input" id="channelName" placeholder="Nazwa kanału WhatsApp" required>
+            </div>
+            <div class="form-group">
+                <label for="channelDescription">Opis kanału:</label>
+                <textarea class="form-input" id="channelDescription" placeholder="Opisz kanał..." rows="3" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="channelLink">Link do kanału:</label>
+                <input type="url" class="form-input" id="channelLink" placeholder="https://chat.whatsapp.com/..." required>
+            </div>
+            <button class="btn btn-success" onclick="addChannel()">Dodaj kanał</button>
+        </div>
+
+        <div id="channelsContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Ładowanie kanałów...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        let channels = []; // Stores the current list of channels
+        let currentRating = {}; // Stores user's temporary rating selection per channel
+
+        /**
+         * Displays a temporary notification message on the screen.
+         * @param {string} message The message to display.
+         * @param {string} type The type of notification ('success' or 'error').
+         */
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`; // Reset classes and add new type
+            notification.classList.add('show'); // Show the notification
+
+            // Automatically hide the notification after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        /**
+         * Fetches channels from the backend API and renders them.
+         */
+        async function loadChannels() {
+            const container = document.getElementById('channelsContainer');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ładowanie kanałów...</p>
+                </div>
+            `; // Show loading spinner
+
+            try {
+                const response = await fetch('/api/channels');
+                if (response.ok) {
+                    channels = await response.json();
+                    renderChannels(); // Render fetched channels
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas ładowania kanałów', 'error');
+                    container.innerHTML = '<div class="loading"><p>Nie udało się załadować kanałów.</p></div>';
+                }
+            } catch (error) {
+                console.error('Błąd podczas ładowania kanałów:', error);
+                showNotification('Błąd połączenia z serwerem. Spróbuj ponownie.', 'error');
+                container.innerHTML = '<div class="loading"><p>Brak połączenia z serwerem.</p></div>';
+            }
+        }
+
+        /**
+         * Renders the list of channels into the DOM.
+         * @param {Array} channelsToRender The array of channel objects to display. Defaults to the global `channels` array.
+         */
+        function renderChannels(channelsToRender = channels) {
+            const container = document.getElementById('channelsContainer');
+
+            if (channelsToRender.length === 0) {
+                container.innerHTML = '<div class="loading"><p>Nie znaleziono kanałów.</p></div>';
+                return;
+            }
+
+            // Generate HTML for each channel card
+            const channelsHTML = channelsToRender.map(channel => `
+                <div class="channel-card">
+                    <div class="channel-header">
+                        <div class="channel-avatar">${channel.name.charAt(0).toUpperCase()}</div>
+                        <div class="channel-info">
+                            <h3>${channel.name}</h3>
+                        </div>
+                    </div>
+
+                    <div class="channel-description">${channel.description}</div>
+
+                    <div class="rating-section">
+                        <div class="stars" data-channel-id="${channel.id}" data-current-rating="${channel.rating}">
+                            ${generateStars(channel.id, channel.rating)}
+                        </div>
+                        <div class="rating-info">
+                            <span>Średnia ocena: ${channel.rating !== undefined ? channel.rating.toFixed(1) : '0.0'}/5</span>
+                            <span>${channel.ratingsCount !== undefined ? channel.ratingsCount : 0} ocen</span>
+                        </div>
+                    </div>
+
+                    <div class="comments-section">
+                        <div class="comment-form">
+                            <textarea class="comment-textarea" placeholder="Napisz swoją opinię..." data-channel-id="${channel.id}"></textarea>
+                            <button class="btn btn-primary" onclick="addComment(${channel.id})" style="margin-top: 10px;">Dodaj komentarz</button>
+                        </div>
+
+                        <div class="comments-list">
+                            ${channel.comments.length > 0 ? channel.comments.map(comment => `
+                                <div class="comment">
+                                    <div class="comment-author">${comment.author}</div>
+                                    <div class="comment-date">${comment.date}</div>
+                                    <div>${comment.text}</div>
+                                </div>
+                            `).join('') : '<p style="font-size: 0.9em; color: #999;">Brak komentarzy. Bądź pierwszy!</p>'}
+                        </div>
+                    </div>
+
+                    <a href="${channel.link}" target="_blank" class="btn btn-success" style="margin-top: 15px; display: inline-block; text-decoration: none;">Dołącz do kanału</a>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="channels-grid">${channelsHTML}</div>`;
+
+            // Add event listeners for stars after rendering
+            document.querySelectorAll('.star').forEach(star => {
+                star.addEventListener('click', handleStarClick);
+                star.addEventListener('mouseover', handleStarHover);
+                star.addEventListener('mouseout', handleStarOut);
+            });
+        }
+
+        /**
+         * Generates the HTML for star ratings.
+         * @param {number} channelId The ID of the channel.
+         * @param {number} rating The current average rating of the channel.
+         * @returns {string} HTML string for the stars.
+         */
+        function generateStars(channelId, rating) {
+            let starsHTML = '';
+            // Round the rating to the nearest whole number for active stars
+            const roundedRating = Math.round(rating);
+            for (let i = 1; i <= 5; i++) {
+                const isActive = i <= roundedRating;
+                starsHTML += `<span class="star ${isActive ? 'active' : ''}" data-channel-id="${channelId}" data-rating="${i}">★</span>`;
+            }
+            return starsHTML;
+        }
+
+        /**
+         * Handles click event on a star to submit a rating.
+         * @param {Event} e The click event.
+         */
+        async function handleStarClick(e) {
+            const channelId = e.target.dataset.channelId;
+            const rating = parseInt(e.target.dataset.rating);
+
+            try {
+                const response = await fetch(`/api/channels/${channelId}/rate`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ rating: rating })
+                });
+
+                if (response.ok) {
+                    showNotification('Dziękujemy za ocenę!');
+                    loadChannels(); // Reload channels to show updated rating
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas dodawania oceny', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas wysyłania oceny:', error);
+                showNotification('Błąd połączenia z serwerem podczas oceniania.', 'error');
+            }
+        }
+
+        /**
+         * Handles mouse hover over a star to visually indicate selection.
+         * @param {Event} e The mouseover event.
+         */
+        function handleStarHover(e) {
+            const hoveredRating = parseInt(e.target.dataset.rating);
+            const starsContainer = e.target.parentElement;
+            const stars = starsContainer.querySelectorAll('.star');
+
+            stars.forEach((star, index) => {
+                if (index < hoveredRating) {
+                    star.style.color = '#ffd700'; // Highlight on hover
+                } else {
+                    star.style.color = '#ddd'; // Dim non-hovered stars
+                }
+            });
+        }
+
+        /**
+         * Resets star colors when mouse leaves the star area.
+         * @param {Event} e The mouseout event.
+         */
+        function handleStarOut(e) {
+            const starsContainer = e.target.parentElement;
+            const channelId = starsContainer.dataset.channelId;
+            const currentAvgRating = parseFloat(starsContainer.dataset.currentRating);
+            const stars = starsContainer.querySelectorAll('.star');
+
+            stars.forEach((star, index) => {
+                if (index < Math.round(currentAvgRating)) {
+                    star.style.color = '#ffd700'; // Keep active color
+                } else {
+                    star.style.color = '#ddd'; // Revert to default color
+                }
+            });
+        }
+
+
+        /**
+         * Adds a new comment to a channel.
+         * @param {number} channelId The ID of the channel to add the comment to.
+         */
+        async function addComment(channelId) {
+            const textarea = document.querySelector(`textarea[data-channel-id="${channelId}"]`);
+            const text = textarea.value.trim();
+
+            if (!text) {
+                showNotification('Proszę napisać komentarz', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/channels/${channelId}/comments`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ text: text, author: "Użytkownik" }) // 'Użytkownik' can be replaced with actual user name
+                });
+
+                if (response.ok) {
+                    textarea.value = ''; // Clear textarea
+                    showNotification('Komentarz został dodany!');
+                    loadChannels(); // Reload channels to show new comment
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas dodawania komentarza', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas dodawania komentarza:', error);
+                showNotification('Błąd połączenia z serwerem podczas dodawania komentarza.', 'error');
+            }
+        }
+
+        /**
+         * Adds a new WhatsApp channel to the database.
+         */
+        async function addChannel() {
+            const name = document.getElementById('channelName').value.trim();
+            const description = document.getElementById('channelDescription').value.trim();
+            const link = document.getElementById('channelLink').value.trim();
+
+            if (!name || !description || !link) {
+                showNotification('Proszę wypełnić wszystkie pola', 'error');
+                return;
+            }
+
+            // Basic link validation for WhatsApp invite link
+            if (!link.startsWith('https://chat.whatsapp.com/')) {
+                showNotification('Link do kanału musi zaczynać się od "https://chat.whatsapp.com/"', 'error');
+                return;
+            }
+
+            const newChannelData = {
+                name: name,
+                description: description,
+                link: link
+            };
+
+            try {
+                const response = await fetch('/api/channels', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(newChannelData)
+                });
+
+                if (response.ok) {
+                    document.getElementById('channelName').value = '';
+                    document.getElementById('channelDescription').value = '';
+                    document.getElementById('channelLink').value = '';
+                    showNotification('Kanał został dodany!');
+                    loadChannels(); // Reload channels to show the new one
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas dodawania kanału', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas dodawania kanału:', error);
+                showNotification('Błąd połączenia z serwerem podczas dodawania kanału.', 'error');
+            }
+        }
+
+        /**
+         * Filters and displays channels based on the search input.
+         */
+        function searchChannels() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            if (!searchTerm) {
+                renderChannels(channels); // If search term is empty, show all channels
+                return;
+            }
+
+            const filteredChannels = channels.filter(channel =>
+                channel.name.toLowerCase().includes(searchTerm) ||
+                channel.description.toLowerCase().includes(searchTerm)
+            );
+
+            renderChannels(filteredChannels);
+        }
+
+        // Initialization logic: Load channels when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChannels(); // Initial load of channels
+
+            // Add enter key listener for search input
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchChannels();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
