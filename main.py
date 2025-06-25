@@ -6,11 +6,15 @@ import psycopg2
 from flask import Flask, request, jsonify
 from datetime import datetime
 from dotenv import load_dotenv
+from flask_cors import CORS # Import CORS
 
 # Load environment variables from .env file (for local development)
 load_dotenv()
 
 app = Flask(__name__)
+# Initialize CORS - allows requests from all origins for now.
+# For production, it's recommended to restrict this to specific origins (e.g., your frontend URL).
+CORS(app) 
 
 # Database connection details
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -18,18 +22,21 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 def get_db_connection():
     """Establishes and returns a PostgreSQL database connection."""
     if not DATABASE_URL:
-        print("DATABASE_URL environment variable not set.")
+        # This error will now be printed explicitly before raising
+        print("ERROR: DATABASE_URL environment variable not set. Please configure it in Render.com environment variables.")
         raise ValueError("DATABASE_URL environment variable not set.")
     try:
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         return conn
     except Exception as e:
-        print(f"Error connecting to the database: {e}")
-        raise
+        # Print the actual database connection error
+        print(f"ERROR: Failed to connect to the database using DATABASE_URL: {DATABASE_URL[:30]}... (truncated). Full error: {e}")
+        raise # Re-raise the exception after printing
 
 def initialize_db():
     """Initializes the database schema if tables do not exist."""
     conn = None
+    cur = None # Initialize cursor outside try block
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -61,30 +68,40 @@ def initialize_db():
         conn.commit()
         print("Database tables checked/created successfully.")
     except Exception as e:
-        print(f"Error initializing database: {e}")
+        print(f"ERROR: Error initializing database schema: {e}")
+        raise # Re-raise to ensure Gunicorn fails with a clear message
     finally:
-        if conn:
+        if cur:
             cur.close()
+        if conn:
             conn.close()
 
-@app.before_request
-def before_request():
-    """Initializes the database before the first request."""
-    # This ensures the DB is initialized when the app starts or restarts
-    # It's safe to call multiple times as CREATE TABLE IF NOT EXISTS handles it.
-    initialize_db()
+# Call initialize_db directly when the app starts.
+# This ensures tables are created/checked before any requests are handled.
+# This part is crucial for Render's startup process.
+try:
+    with app.app_context(): # Ensure app context is available for database operations
+        initialize_db()
+except Exception as e:
+    print(f"CRITICAL ERROR during database initialization: {e}")
+    # Depending on how critical DB is, you might want to exit here
+    # For now, let's allow the app to try and start, but log the error.
+    # If the app fails to start after this, the Gunicorn traceback will eventually show it.
+    pass # Allow the app to proceed even if DB init fails, to see other errors.
+         # For production, you'd likely want this to stop the app if DB isn't ready.
 
 
 @app.route('/')
 def index():
-    """Serves the main HTML page (placeholder for direct access, in reality,
-    the HTML would be served by a web server or framework that integrates the frontend)."""
+    """Serves the main HTML page or acts as a health check."""
+    # In a setup with a separate frontend, this might just be a simple health check.
     return "Backend for Whapineo is running. Access /api/channels, etc."
 
 @app.route('/api/channels', methods=['GET'])
 def get_channels():
     """Fetches all channels from the database."""
     conn = None
+    cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -114,11 +131,12 @@ def get_channels():
             })
         return jsonify(channels_list)
     except Exception as e:
-        print(f"Error fetching channels: {e}")
+        print(f"ERROR: Error fetching channels: {e}")
         return jsonify({"error": "Błąd podczas ładowania kanałów"}), 500
     finally:
-        if conn:
+        if cur:
             cur.close()
+        if conn:
             conn.close()
 
 @app.route('/api/channels', methods=['POST'])
@@ -133,6 +151,7 @@ def add_channel():
         return jsonify({"error": "Wszystkie pola są wymagane: nazwa, opis, link"}), 400
 
     conn = None
+    cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -144,14 +163,19 @@ def add_channel():
         conn.commit()
         return jsonify({"message": "Kanał dodany pomyślnie", "id": channel_id}), 201
     except psycopg2.errors.UniqueViolation:
-        conn.rollback() # Rollback the transaction
+        if conn:
+            conn.rollback() # Rollback the transaction
+        print(f"ERROR: Unique violation when adding channel with link: {link}")
         return jsonify({"error": "Kanał o podanym linku już istnieje."}), 409
     except Exception as e:
-        print(f"Error adding channel: {e}")
+        print(f"ERROR: Error adding channel: {e}")
+        if conn:
+            conn.rollback()
         return jsonify({"error": "Błąd podczas dodawania kanału"}), 500
     finally:
-        if conn:
+        if cur:
             cur.close()
+        if conn:
             conn.close()
 
 @app.route('/api/channels/<int:channel_id>/rate', methods=['POST'])
@@ -164,6 +188,7 @@ def rate_channel(channel_id):
         return jsonify({"error": "Ocena musi być liczbą od 1 do 5."}), 400
 
     conn = None
+    cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -190,11 +215,14 @@ def rate_channel(channel_id):
         conn.commit()
         return jsonify({"message": "Ocena dodana pomyślnie", "new_average_rating": new_avg_rating, "new_ratings_count": new_ratings_count}), 200
     except Exception as e:
-        print(f"Error rating channel: {e}")
+        print(f"ERROR: Error rating channel {channel_id}: {e}")
+        if conn:
+            conn.rollback()
         return jsonify({"error": "Błąd podczas dodawania oceny"}), 500
     finally:
-        if conn:
+        if cur:
             cur.close()
+        if conn:
             conn.close()
 
 @app.route('/api/channels/<int:channel_id>/comments', methods=['POST'])
@@ -208,9 +236,10 @@ def add_comment_to_channel(channel_id):
         return jsonify({"error": "Tekst komentarza jest wymagany."}), 400
 
     conn = None
+    cur = None
     try:
         conn = get_db_connection()
-        cur = conn.cursor
+        cur = conn.cursor()
         cur.execute(
             "INSERT INTO comments (channel_id, author, text) VALUES (%s, %s, %s);",
             (channel_id, author, text)
@@ -218,14 +247,15 @@ def add_comment_to_channel(channel_id):
         conn.commit()
         return jsonify({"message": "Komentarz dodany pomyślnie"}), 201
     except Exception as e:
-        print(f"Error adding comment: {e}")
+        print(f"ERROR: Error adding comment to channel {channel_id}: {e}")
+        if conn:
+            conn.rollback()
         return jsonify({"error": "Błąd podczas dodawania komentarza"}), 500
     finally:
-        if conn:
+        if cur:
             cur.close()
+        if conn:
             conn.close()
 
 if __name__ == '__main__':
-    # For local development, set DATABASE_URL in a .env file or directly
-    # Example .env entry: DATABASE_URL="postgresql://user:password@host:port/database"
     app.run(debug=True, port=5000) # Run on port 5000 for local development
