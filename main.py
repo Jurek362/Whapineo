@@ -5,9 +5,9 @@ import json
 import psycopg2
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, request, jsonify # Removed make_response
+from flask import Flask, request, jsonify 
 from datetime import datetime
-import time # Import time for epoch timestamps
+import time 
 from dotenv import load_dotenv
 from flask_cors import CORS
 from urllib.parse import urlparse
@@ -27,16 +27,16 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 # WARNING: Storing passwords directly in environment variables is NOT secure for production.
 # This is for demonstration purposes only.
 # In production, use a proper authentication system with hashed passwords in a database.
-ADMIN_PASS1 = os.environ.get('ADMIN_PASS1', 'default_admin123') # Ustaw to na Render.com
-ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') # Ustaw to na Render.com
-ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') # Token do autoryzacji operacji
+ADMIN_PASS1 = os.environ.get('ADMIN_PASS1', 'default_admin123') 
+ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') 
+ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') 
 
 # --- WhatsApp Specific Constants ---
 # Default profile image URL that indicates a non-existent or inaccessible channel
 WHATSAPP_DEFAULT_PROFILE_IMAGE = "https://static.whatsapp.net/rsrc.php/v4/yo/r/J5gK5AgJ_L5.png"
 
-# --- Rating Limit Constants (No longer directly used by backend for cookie logic) ---
-# ONE_DAY_IN_SECONDS = 24 * 60 * 60 # This constant will now only be relevant for the frontend logic
+# --- Rating Limit Constants ---
+ONE_DAY_IN_SECONDS = 24 * 60 * 60 # 24 hours in seconds
 
 def verify_admin_token(request_headers):
     """Verifies if the request contains the correct admin authentication token."""
@@ -76,13 +76,13 @@ def initialize_db():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS channels (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
+                name VARCHAR(500) NOT NULL, -- Increased length
                 description TEXT,
-                link VARCHAR(255) NOT NULL UNIQUE,
+                link VARCHAR(1000) NOT NULL UNIQUE, -- Increased length
                 average_rating REAL DEFAULT 0.0,
                 ratings_count INTEGER DEFAULT 0,
                 follower_count INTEGER DEFAULT 0,
-                profile_image_url VARCHAR(255), -- Now includes profile image URL
+                profile_image_url VARCHAR(500), -- Increased length
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -262,7 +262,7 @@ def get_channels():
                 'rating': channel[4] if channel[4] is not None else 0.0,
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
                 'followerCount': channel[6] if channel[6] is not None else 0,
-                'profileImageUrl': channel[7], # Include profile image URL
+                'profileImageUrl': channel[7], 
                 'comments': comments_list
             })
         return jsonify(channels_list)
@@ -292,7 +292,7 @@ def add_channel():
     name = scraped_data['name']
     description = scraped_data['description']
     follower_count = scraped_data['follower_count']
-    profile_image_url = scraped_data['profile_image_url'] # Get scraped image URL
+    profile_image_url = scraped_data['profile_image_url'] 
 
     # Ulepszone sprawdzanie czy kanał istnieje i jest dostępny
     # Jeśli nazwa to domyślny fallback LUB nie udało się pobrać nazwy
@@ -302,7 +302,7 @@ def add_channel():
         return jsonify({"error": "Kanał nie istnieje! Nie udało się pobrać danych z podanego linku."}), 400
 
     if not name:
-        name = parsed_url.path.strip('/').split('/')[-1] # Fallback to ID if scraping name fails
+        name = parsed_url.path.strip('/').split('/')[-1] 
 
 
     conn = None
@@ -416,9 +416,6 @@ def rate_channel(channel_id):
     if rating is None or not (1 <= rating <= 5):
         return jsonify({"error": "Ocena musi być liczbą od 1 do 5."}), 400
 
-    # --- Usunięto logikę limitu oceniania opartą na cookies z backendu.
-    # --- Limit oceniania jest teraz w pełni obsługiwany po stronie klienta (frontend - localStorage).
-
     conn = None
     cur = None
     try:
@@ -444,7 +441,6 @@ def rate_channel(channel_id):
         )
         conn.commit()
 
-        # Backend zwraca prostą odpowiedź JSON, bez manipulacji cookie
         return jsonify({
             "message": "Ocena dodana pomyślnie",
             "new_average_rating": new_avg_rating,
