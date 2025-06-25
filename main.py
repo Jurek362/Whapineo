@@ -233,14 +233,14 @@ def index():
 
 @app.route('/api/channels', methods=['GET'])
 def get_channels():
-    """Fetches all channels from the database."""
+    """Fetches all channels from the database, sorted by average rating and then by ratings count."""
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Include profile_image_url in SELECT statement
-        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY created_at DESC;")
+        # Changed sorting: primary by average_rating DESC, secondary by ratings_count DESC
+        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY average_rating DESC, ratings_count DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
