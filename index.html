@@ -129,6 +129,9 @@
             border: 1px solid rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
+            /* Allow card to grow based on content */
+            height: auto; 
+            min-height: 250px; /* Minimum height for consistency */
         }
 
         .channel-card:hover {
@@ -155,7 +158,15 @@
             font-size: 18px;
             margin-right: 15px;
             flex-shrink: 0;
+            overflow: hidden; /* Ensure image fits */
         }
+
+        .channel-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cover the avatar area */
+        }
+
 
         .channel-info h3 {
             font-size: 1.3em;
@@ -174,7 +185,7 @@
             color: #666;
             margin-bottom: 15px;
             line-height: 1.5;
-            flex-grow: 1;
+            flex-grow: 1; /* Allow description to take available space */
         }
 
         /* Rating Section */
@@ -420,7 +431,6 @@
                 <label for="channelLink">Link do kanału:</label>
                 <input type="url" class="form-input" id="channelLink" placeholder="https://whatsapp.com/channel/..." required>
             </div>
-            <!-- Usunięto pole opisu kanału, będzie pobierane z web scrapingu -->
             <button class="btn btn-success" onclick="addChannel()">Dodaj kanał</button>
         </div>
 
@@ -502,7 +512,9 @@
             const channelsHTML = channelsToRender.map(channel => `
                 <div class="channel-card">
                     <div class="channel-header">
-                        <div class="channel-avatar">${channel.name.charAt(0).toUpperCase()}</div>
+                        <div class="channel-avatar">
+                            ${channel.profileImageUrl ? `<img src="${channel.profileImageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/1a4d3a/ffffff?text=${channel.name.charAt(0).toUpperCase()}'" alt="Profil kanału">` : channel.name.charAt(0).toUpperCase()}
+                        </div>
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' obserwujących' : 'Brak danych o obserwujących'}</p>
