@@ -74,6 +74,7 @@ def initialize_db():
                 average_rating REAL DEFAULT 0.0,
                 ratings_count INTEGER DEFAULT 0,
                 follower_count INTEGER DEFAULT 0,
+                profile_image_url VARCHAR(255), -- Now includes profile image URL
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
@@ -109,7 +110,7 @@ except Exception as e:
 
 def fetch_channel_details_from_whatsapp_page(url):
     """
-    Attempts to scrape channel name, description, and follower count from the WhatsApp channel URL.
+    Attempts to scrape channel name, description, follower count, and profile image URL from the WhatsApp channel URL.
     WARNING: This approach is highly unreliable for dynamic websites like WhatsApp.
     WhatsApp uses JavaScript to render content and has strong anti-scraping measures.
     This function is for demonstration/attempt purposes.
@@ -118,6 +119,7 @@ def fetch_channel_details_from_whatsapp_page(url):
     channel_name = None
     channel_description = None
     follower_count = 0
+    profile_image_url = None # New: for profile image URL
 
     try:
         headers = {
@@ -180,6 +182,22 @@ def fetch_channel_details_from_whatsapp_page(url):
             except ValueError:
                 print(f"DEBUG: Could not parse follower count from: '{text_with_followers}'")
                 pass
+        
+        # --- Attempt to find Profile Image URL ---
+        # Look for the Open Graph image meta tag first
+        og_image_tag = soup.find('meta', property='og:image')
+        if og_image_tag and og_image_tag.get('content'):
+            profile_image_url = og_image_tag['content'].strip()
+        else:
+            # Fallback: Try to find an <img> tag with a common class for avatars
+            # This is highly speculative and might need adjustment based on actual WhatsApp HTML
+            img_tag = soup.find('img', class_='_aogp') # Example class, needs verification
+            if img_tag and img_tag.get('src'):
+                profile_image_url = img_tag['src'].strip()
+
+        if not profile_image_url:
+            print(f"DEBUG: Could not find profile image URL for {url}")
+
 
     except requests.exceptions.RequestException as req_err:
         print(f"ERROR: HTTP/Request error while fetching {url}: {req_err}")
@@ -187,15 +205,17 @@ def fetch_channel_details_from_whatsapp_page(url):
         channel_name = parsed_url.path.strip('/').split('/')[-1]
         channel_description = "Nie udało się pobrać opisu z powodu błędu połączenia."
         follower_count = 0
+        profile_image_url = None # Ensure it's None on error
     except Exception as e:
         print(f"ERROR: General error during scraping {url}: {e}")
         parsed_url = urlparse(url)
         channel_name = parsed_url.path.strip('/').split('/')[-1]
         channel_description = "Nie udało się pobrać opisu z powodu błędu parsowania."
         follower_count = 0
+        profile_image_url = None # Ensure it's None on error
 
-    print(f"DEBUG: Scraped results for {url}: Name='{channel_name}', Description='{channel_description}', Followers={follower_count}")
-    return {"name": channel_name, "description": channel_description, "follower_count": follower_count}
+    print(f"DEBUG: Scraped results for {url}: Name='{channel_name}', Description='{channel_description}', Followers={follower_count}, Image='{profile_image_url}'")
+    return {"name": channel_name, "description": channel_description, "follower_count": follower_count, "profile_image_url": profile_image_url}
 
 
 @app.route('/')
@@ -211,7 +231,8 @@ def get_channels():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count FROM channels ORDER BY created_at DESC;")
+        # Include profile_image_url in SELECT statement
+        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
@@ -233,6 +254,7 @@ def get_channels():
                 'rating': channel[4] if channel[4] is not None else 0.0,
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
                 'followerCount': channel[6] if channel[6] is not None else 0,
+                'profileImageUrl': channel[7], # Include profile image URL
                 'comments': comments_list
             })
         return jsonify(channels_list)
@@ -247,7 +269,7 @@ def get_channels():
 
 @app.route('/api/channels', methods=['POST'])
 def add_channel():
-    """Dodaje nowy kanał do bazy danych, próbując pobrać nazwę, opis i liczbę obserwujących z linku."""
+    """Dodaje nowy kanał do bazy danych, próbując pobrać nazwę, opis, liczbę obserwujących i URL obrazu profilowego z linku."""
     data = request.get_json()
     link = data.get('link')
 
@@ -262,6 +284,7 @@ def add_channel():
     name = scraped_data['name']
     description = scraped_data['description']
     follower_count = scraped_data['follower_count']
+    profile_image_url = scraped_data['profile_image_url'] # Get scraped image URL
 
     if not name:
         name = parsed_url.path.strip('/').split('/')[-1] # Fallback to ID if scraping name fails
@@ -272,13 +295,14 @@ def add_channel():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        # Include profile_image_url in INSERT statement
         cur.execute(
-            "INSERT INTO channels (name, description, link, follower_count) VALUES (%s, %s, %s, %s) RETURNING id;",
-            (name, description, link, follower_count)
+            "INSERT INTO channels (name, description, link, follower_count, profile_image_url) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
+            (name, description, link, follower_count, profile_image_url)
         )
         channel_id = cur.fetchone()[0]
         conn.commit()
-        return jsonify({"message": "Kanał dodany pomyślnie", "id": channel_id, "name": name, "description": description, "followerCount": follower_count}), 201
+        return jsonify({"message": "Kanał dodany pomyślnie", "id": channel_id, "name": name, "description": description, "followerCount": follower_count, "profileImageUrl": profile_image_url}), 201
     except psycopg2.errors.UniqueViolation:
         if conn:
             conn.rollback()
@@ -473,6 +497,6 @@ def delete_all_data_development_only():
 if __name__ == '__main__':
     # Aby wyczyścić bazę danych podczas lokalnego uruchomienia, odkomentuj poniższą linię:
     # WARNING: To usunie WSZYSTKIE dane! Używaj tylko w celach deweloperskich/testowych!
-    delete_all_data_development_only()
+    # delete_all_data_development_only()
 
     app.run(debug=True, port=5000)
