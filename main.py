@@ -30,6 +30,10 @@ ADMIN_PASS1 = os.environ.get('ADMIN_PASS1', 'default_admin123') # Ustaw to na Re
 ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') # Ustaw to na Render.com
 ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') # Token do autoryzacji operacji
 
+# --- WhatsApp Specific Constants ---
+# Default profile image URL that indicates a non-existent or inaccessible channel
+WHATSAPP_DEFAULT_PROFILE_IMAGE = "https://static.whatsapp.net/rsrc.php/v4/yo/r/J5gK5AgJ_L5.png"
+
 def verify_admin_token(request_headers):
     """Verifies if the request contains the correct admin authentication token."""
     auth_header = request_headers.get('Authorization')
@@ -285,6 +289,13 @@ def add_channel():
     description = scraped_data['description']
     follower_count = scraped_data['follower_count']
     profile_image_url = scraped_data['profile_image_url'] # Get scraped image URL
+
+    # Ulepszone sprawdzanie czy kanał istnieje i jest dostępny
+    # Jeśli nazwa to domyślny fallback LUB nie udało się pobrać nazwy
+    # ORAZ (url obrazu profilowego to None LUB url obrazu profilowego to znany domyślny obraz WhatsApp)
+    if (name == "WhatsApp Channel" or name is None) and \
+       (profile_image_url is None or profile_image_url == WHATSAPP_DEFAULT_PROFILE_IMAGE):
+        return jsonify({"error": "Kanał nie istnieje! Nie udało się pobrać danych z podanego linku."}), 400
 
     if not name:
         name = parsed_url.path.strip('/').split('/')[-1] # Fallback to ID if scraping name fails
