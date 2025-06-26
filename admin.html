@@ -247,7 +247,6 @@
                 <input type="password" class="form-input" id="passwordTwo" required>
             </div>
             <button class="btn btn-primary" onclick="verifyPasswords()">Zaloguj się</button>
-            <!-- Ostrzeżenie o hasłach zostało usunięte zgodnie z życzeniem użytkownika -->
         </div>
 
         <div id="adminContent" class="admin-content" style="display: none;">
@@ -255,7 +254,7 @@
             <div id="channelsAdminList">
                 <div class="loading">
                     <div class="spinner"></div>
-                    <p>Ładowanie kanałów...</p>
+                    <p>Ładowanie kanałów do zarządzania...</p>
                 </div>
             </div>
             <button class="btn btn-warning" onclick="confirmClearAllChannels()" style="margin-top: 20px;">Wyczyść Wszystkie Kanały</button>
@@ -327,6 +326,8 @@
                 </div>
             `;
             try {
+                // Ta lista kanałów NIE WYMAGA tokena admina, bo jest to ogólne pobieranie danych.
+                // Token będzie potrzebny do operacji usuwania.
                 const response = await fetch(`${API_BASE_URL}/api/channels`);
                 if (response.ok) {
                     const channels = await response.json();
@@ -364,7 +365,7 @@
                         <p>Ocena: ${channel.rating.toFixed(1)}/5 (${channel.ratingsCount} ocen)</p>
                         <p>ID: ${channel.id}</p>
                     </div>
-                    <button class="btn btn-danger" onclick="confirmDeleteChannel(${channel.id}, '${channel.name}')">Usuń</button>
+                    <button class="btn btn-danger" onclick="confirmDeleteChannel(${channel.id}, '${channel.name.replace(/'/g, "\\'")}')">Usuń</button>
                 </li>
             `).join('');
             channelsAdminList.innerHTML = `<ul class="channel-list">${listHTML}</ul>`;
@@ -377,7 +378,7 @@
          */
         function confirmDeleteChannel(channelId, channelName) {
             if (!adminToken) {
-                showNotification('Błąd autoryzacji: Brak tokena administratora.', 'error');
+                showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
                 return;
             }
             if (confirm(`Czy na pewno chcesz usunąć kanał "${channelName}" (ID: ${channelId})? To jest nieodwracalne!`)) {
@@ -417,7 +418,7 @@
          */
         function confirmClearAllChannels() {
             if (!adminToken) {
-                showNotification('Błąd autoryzacji: Brak tokena administratora.', 'error');
+                showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
                 return;
             }
             if (confirm('Jesteś pewien, że chcesz usunąć WSZYSTKIE kanały i komentarze? To jest nieodwracalne!')) {
