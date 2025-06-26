@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-        <!-- Google tag (gtag.js) -->
+                <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-6ZTY2M5G0L"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -18,13 +18,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Whapineo - Oceny Kanałów WhatsApp</title>
-    <link rel="icon" type="image/png" href="logo.png"> <!-- Favicon dla karty przeglądarki -->
-    <!-- Open Graph meta tags for Discord/social media embeds -->
-    <meta property="og:title" content="Whapineo - Oceny Kanałów WhatsApp">
+    <link rel="icon" type="image/png" href="logo.png"> <meta property="og:title" content="Whapineo - Oceny Kanałów WhatsApp">
     <meta property="og:description" content="Odkryj i oceniaj najlepsze kanały WhatsApp. Znajdź interesujące społeczności i dziel się opiniami!">
-    <meta property="og:image" content="https://i.postimg.cc/jSMcy1KV/file-00000000f2446246beb40b4c7e938a1b-1.png"> <!-- Obrazek wyświetlany w podglądzie (embedzie) -->
-    <meta property="og:url" content="YOUR_WEBSITE_URL_HERE"> <!-- Zmień na rzeczywisty URL Twojej strony -->
-    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://i.postimg.cc/jSMcy1KV/file-00000000f2446246beb40b4c7e938a1b-1.png"> <meta property="og:url" content="YOUR_WEBSITE_URL_HERE"> <meta property="og:type" content="website">
 
     <style>
         /* General styles */
@@ -277,18 +273,27 @@
             margin-top: 5px;
         }
 
-        .channel-description {
-            color: #666;
-            margin-bottom: 15px;
-            line-height: 1.5;
-            flex-grow: 1; /* Allow description to take available space */
-            word-break: break-all; /* Łamanie długich słów (dla kompatybilności wstecznej) */
-            overflow-wrap: break-word; /* Preferowana właściwość do łamania długich słów i URL-i */
+        /* Collapsible content */
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, opacity 0.7s ease-in-out;
+            opacity: 0;
+            padding-top: 0; /* Ensures no padding when collapsed */
+        }
+
+        .collapsible-content.show {
+            max-height: 1000px; /* Arbitrarily large value to allow content to show */
+            opacity: 1;
+            padding-top: 15px; /* Adds space above when shown */
         }
 
         /* Rating Section */
         .rating-section {
             margin-bottom: 20px;
+            padding-top: 15px; /* Added padding to separate from header */
+            border-top: 1px solid #eee; /* Separator line */
+            margin-top: 15px; /* Added margin to separate from header */
         }
 
         .stars {
@@ -326,6 +331,8 @@
         /* Comments Section */
         .comments-section {
             margin-top: 20px;
+            padding-top: 15px; /* Added padding to separate from rating section */
+            border-top: 1px solid #eee; /* Separator line */
         }
 
         .comment-form {
@@ -604,6 +611,126 @@
         .footer strong {
             color: rgba(255, 255, 255, 0.9); /* Nieco jaśniejszy kolor dla pogrubionego tekstu */
         }
+
+        /* Style for the "Show More/Less" link */
+        .btn-toggle-content {
+            background: none;
+            border: none;
+            color: #007bff; /* Blue color for the link */
+            padding: 5px 0;
+            font-size: 1em;
+            text-align: left;
+            margin-top: 10px;
+            text-decoration: underline; /* Underline to indicate it's a link */
+            transition: color 0.3s ease;
+            box-shadow: none; /* Remove shadow */
+            text-transform: none; /* Remove uppercase */
+            letter-spacing: normal; /* Reset letter spacing */
+        }
+
+        .btn-toggle-content:hover {
+            color: #0056b3; /* Darker blue on hover */
+            text-decoration: none; /* Remove underline on hover */
+            transform: none; /* Remove transform on hover */
+            box-shadow: none; /* Ensure no shadow on hover */
+        }
+
+        /* Pagination styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .pagination button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            color: #333;
+        }
+
+        .pagination button:hover:not(.active):not(:disabled) {
+            background-color: #e0e0e0;
+            border-color: #c0c0c0;
+        }
+
+        .pagination button.active {
+            background-color: #1a4d3a;
+            color: white;
+            border-color: #1a4d3a;
+            font-weight: bold;
+        }
+
+        .pagination button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Boost button style */
+        .btn-boost {
+            background: linear-gradient(45deg, #FFD700, #FFA500); /* Gold/Orange gradient */
+            color: #333;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-left: 10px; /* Space from other elements */
+            margin-top: 5px;
+        }
+
+        .btn-boost:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .btn-boost:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Unboost button style */
+        .btn-unboost {
+            background: linear-gradient(45deg, #a7a7a7, #6b6b6b); /* Grey gradient */
+            color: white;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-left: 10px;
+            margin-top: 5px;
+        }
+
+        .btn-unboost:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .btn-unboost:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+            box-shadow: none;
+            transform: none;
+        }
     </style>
 </head>
 <body>
@@ -615,7 +742,6 @@
             <button id="toggleInstructionsBtn" class="btn btn-toggle-instructions" onclick="toggleInstructions()">Pokaż instrukcję</button>
         </div>
 
-        <!-- Nowa sekcja z instrukcjami -->
         <div id="instructionsSection" class="instructions-section">
             <h2>Jak korzystać z Whapineo</h2>
             <p>Witaj w Whapineo! Poniżej znajdziesz krótkie instrukcje, jak w pełni wykorzystać możliwości tej platformy:</p>
@@ -625,6 +751,8 @@
                 <li><strong>Oceniaj kanały:</strong> Kliknij na gwiazdki w karcie kanału, aby wystawić ocenę od 1 do 5. Możesz ocenić każdy kanał raz na 24 godziny.</li>
                 <li><strong>Dodawaj komentarze:</strong> Podziel się swoją opinią na temat kanału, pisząc komentarz w polu tekstowym i klikając "Dodaj komentarz".</li>
                 <li><strong>Dołącz do kanału:</strong> Użyj zielonego przycisku "Dołącz do kanału", aby bezpośrednio przejść do kanału na WhatsApp.</li>
+                <li><strong>Boostuj kanały:</strong> Kliknij przycisk "Boostuj", aby na 15 minut przenieść kanał na samą górę listy!</li>
+                <li><strong>Unboostuj kanały:</strong> Kliknij przycisk "Unboostuj", aby przenieść kanał na sam dół listy. Ta akcja również ma cooldown.</li>
             </ul>
             <p>Mamy nadzieję, że Whapineo pomoże Ci znaleźć wspaniałe społeczności!</p>
         </div>
@@ -637,7 +765,7 @@
             <div class="sort-section">
                 <label for="sortSelect">Sortuj według:</label>
                 <select id="sortSelect" class="sort-select" onchange="sortChannels()">
-                    <option value="default">Domyślne</option>
+                    <option value="default" selected>Wg. najnowszych boostów</option>
                     <option value="rating_desc">Najwyżej oceniane</option>
                     <option value="rating_asc">Najniżej oceniane</option>
                     <option value="ratings_count_desc">Najwięcej ocen</option>
@@ -663,6 +791,9 @@
                 <p>Ładowanie kanałów...</p>
             </div>
         </div>
+
+        <div id="paginationControls" class="pagination">
+            </div>
     </div>
 
     <div id="notification" class="notification"></div>
@@ -676,9 +807,13 @@
         // Define the base URL for your Render.com backend API
         const API_BASE_URL = 'https://whapineobackend.onrender.com'; // Your Render backend URL here
 
-        let channels = []; // Stores the current list of channels
-        let currentChannels = []; // Stores the currently displayed (filtered/sorted) channels
+        let channels = []; // Stores the current list of channels (all of them)
+        let filteredAndSortedChannels = []; // Stores the currently filtered and sorted channels
+        const channelsPerPage = 10; // Number of channels to display per page
+        let currentPage = 1; // Current page number
+
         const ONE_DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        const FIFTEEN_MINUTES_IN_MILLISECONDS = 15 * 60 * 1000; // 15 minutes in milliseconds
 
         /**
          * Reads the rated channels data from localStorage.
@@ -722,6 +857,92 @@
         }
 
         /**
+         * Reads the boosted channels data from localStorage.
+         * @returns {Object} An object mapping channel IDs to their last boost timestamp.
+         */
+        function getBoostedChannelsFromLocalStorage() {
+            try {
+                const data = localStorage.getItem('boosted_channels');
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                console.error("Error parsing localStorage 'boosted_channels':", e);
+                return {}; // Return empty object if parsing fails
+            }
+        }
+
+        /**
+         * Saves the boosted channels data to localStorage.
+         * @param {Object} data The object to save.
+         */
+        function setBoostedChannelsToLocalStorage(data) {
+            try {
+                localStorage.setItem('boosted_channels', JSON.stringify(data));
+            } catch (e) {
+                console.error("Error saving to localStorage 'boosted_channels':", e);
+            }
+        }
+
+        /**
+         * Checks if a channel can be boosted based on localStorage data.
+         * @param {number} channelId The ID of the channel to check.
+         * @returns {boolean} True if the channel can be boosted, false otherwise.
+         */
+        function canBoostChannel(channelId) {
+            const boostedChannels = getBoostedChannelsFromLocalStorage();
+            const lastBoostedTime = boostedChannels[channelId];
+            if (!lastBoostedTime) {
+                return true; // Not boosted before
+            }
+            const currentTime = Date.now(); // Current time in milliseconds
+            return (currentTime - lastBoostedTime) >= FIFTEEN_MINUTES_IN_MILLISECONDS;
+        }
+
+        // --- NEW UNBOOST LOGIC ---
+        const UNBOOST_COOLDOWN_IN_MILLISECONDS = 15 * 60 * 1000; // 15 minutes cooldown for unboost
+
+        /**
+         * Reads the unboosted channels data from localStorage.
+         * @returns {Object} An object mapping channel IDs to their last unboost timestamp.
+         */
+        function getUnboostedChannelsFromLocalStorage() {
+            try {
+                const data = localStorage.getItem('unboosted_channels');
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                console.error("Error parsing localStorage 'unboosted_channels':", e);
+                return {};
+            }
+        }
+
+        /**
+         * Saves the unboosted channels data to localStorage.
+         * @param {Object} data The object to save.
+         */
+        function setUnboostedChannelsToLocalStorage(data) {
+            try {
+                localStorage.setItem('unboosted_channels', JSON.stringify(data));
+            } catch (e) {
+                console.error("Error saving to localStorage 'unboosted_channels':", e);
+            }
+        }
+
+        /**
+         * Checks if a channel can be unboosted based on localStorage data.
+         * @param {number} channelId The ID of the channel to check.
+         * @returns {boolean} True if the channel can be unboosted, false otherwise.
+         */
+        function canUnboostChannel(channelId) {
+            const unboostedChannels = getUnboostedChannelsFromLocalStorage();
+            const lastUnboostedTime = unboostedChannels[channelId];
+            if (!lastUnboostedTime) {
+                return true;
+            }
+            const currentTime = Date.now();
+            return (currentTime - lastUnboostedTime) >= UNBOOST_COOLDOWN_IN_MILLISECONDS;
+        }
+        // --- END OF NEW UNBOOST LOGIC ---
+
+        /**
          * Displays a temporary notification message on the screen.
          * @param {string} message The message to display.
          * @param {string} type The type of notification ('success' or 'error').
@@ -754,10 +975,10 @@
                 const response = await fetch(`${API_BASE_URL}/api/channels`);
                 if (response.ok) {
                     channels = await response.json();
-                    currentChannels = [...channels]; // Initialize currentChannels with all channels
-                    // Set default sort option to 'rating_desc' and apply it
-                    document.getElementById('sortSelect').value = 'rating_desc'; 
-                    sortChannels(); // Sort and render fetched channels
+                    applyFiltersAndSorting(); // Apply initial filter and sort
+                    // Set the default sort option in the UI (but backend already handles primary sort)
+                    document.getElementById('sortSelect').value = 'default'; 
+                    sortChannels(); // Apply initial sort
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas ładowania kanałów', 'error');
@@ -771,23 +992,33 @@
         }
 
         /**
-         * Renders the list of channels into the DOM.
-         * @param {Array} channelsToRender The array of channel objects to display. Defaults to `currentChannels`.
+         * Renders the list of channels into the DOM based on the current page.
+         * @param {Array} channelsToRender The array of channel objects to display.
          */
-        function renderChannels(channelsToRender = currentChannels) {
+        function renderChannels(channelsToRender = filteredAndSortedChannels) {
             const container = document.getElementById('channelsContainer');
             const ratedChannels = getRatedChannelsFromLocalStorage(); // Get current rated status
+            const boostedChannels = getBoostedChannelsFromLocalStorage(); // Get current boosted status
 
-            if (channelsToRender.length === 0) {
+            const startIndex = (currentPage - 1) * channelsPerPage;
+            const endIndex = startIndex + channelsPerPage;
+            const channelsOnPage = channelsToRender.slice(startIndex, endIndex);
+
+            if (channelsOnPage.length === 0) {
                 container.innerHTML = '<div class="loading"><p>Nie znaleziono kanałów.</p></div>';
+                renderPaginationControls(); // Still render controls even if no channels
                 return;
             }
 
             // Generate HTML for each channel card
-            const channelsHTML = channelsToRender.map(channel => {
+            const channelsHTML = channelsOnPage.map(channel => {
                 const canRate = canRateChannel(channel.id);
                 const starsClass = canRate ? '' : 'disabled';
-                
+                const canBoost = canBoostChannel(channel.id);
+                const boostButtonDisabled = !canBoost ? 'disabled' : '';
+                const canUnboost = canUnboostChannel(channel.id); // NEW: Check unboost cooldown
+                const unboostButtonDisabled = !canUnboost ? 'disabled' : ''; // NEW: Disable state for unboost
+
                 // Poprawka dla błędu URI malformed: Użycie Array.from do bezpiecznego pobrania pierwszej litery
                 const firstChar = (channel.name && channel.name.length > 0) ? Array.from(channel.name)[0] : '';
                 const encodedFirstChar = encodeURIComponent(firstChar.toUpperCase());
@@ -802,9 +1033,9 @@
                             <h3>${channel.name}</h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' obserwujących' : 'Brak danych o obserwujących'}</p>
                         </div>
+                        <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boostuj</button>
+                        <button class="btn-boost btn-unboost" onclick="handleUnboostClick(${channel.id})" ${unboostButtonDisabled}>Unboostuj</button>
                     </div>
-
-                    <div class="channel-description">${channel.description}</div>
 
                     <div class="rating-section">
                         <div class="stars ${starsClass}" data-channel-id="${channel.id}" data-current-rating="${channel.rating}">
@@ -833,7 +1064,11 @@
                         </div>
                     </div>
 
-                    <a href="${channel.link}" target="_blank" class="btn btn-success" style="margin-top: 15px; display: inline-block; text-decoration: none;">Dołącz do kanału</a>
+                    <div class="collapsible-content" id="collapsibleContent-${channel.id}">
+                        <div class="channel-description">${channel.description}</div>
+                        <a href="${channel.link}" target="_blank" class="btn btn-success" style="margin-top: 15px; display: inline-block; text-decoration: none;">Dołącz do kanału</a>
+                    </div>
+                    <button class="btn btn-toggle-content" onclick="toggleChannelContent(event, ${channel.id})">...Pokaż więcej</button>
                 </div>
                 `;
             }).join('');
@@ -849,6 +1084,58 @@
                     star.addEventListener('mouseout', handleStarOut);
                 }
             });
+
+            renderPaginationControls(); // Render pagination controls after channels
+        }
+
+        /**
+         * Generates and renders pagination buttons.
+         */
+        function renderPaginationControls() {
+            const paginationContainer = document.getElementById('paginationControls');
+            paginationContainer.innerHTML = ''; // Clear previous buttons
+
+            const totalPages = Math.ceil(filteredAndSortedChannels.length / channelsPerPage);
+
+            if (totalPages <= 1) {
+                return; // No pagination needed for 1 or less pages
+            }
+
+            // Previous button
+            const prevButton = document.createElement('button');
+            prevButton.textContent = 'Poprzednia';
+            prevButton.disabled = currentPage === 1;
+            prevButton.onclick = () => goToPage(currentPage - 1);
+            paginationContainer.appendChild(prevButton);
+
+            // Page number buttons
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.classList.toggle('active', i === currentPage);
+                pageButton.onclick = () => goToPage(i);
+                paginationContainer.appendChild(pageButton);
+            }
+
+            // Next button
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Następna';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.onclick = () => goToPage(currentPage + 1);
+            paginationContainer.appendChild(nextButton);
+        }
+
+        /**
+         * Changes the current page and re-renders channels.
+         * @param {number} pageNumber The page number to navigate to.
+         */
+        function goToPage(pageNumber) {
+            const totalPages = Math.ceil(filteredAndSortedChannels.length / channelsPerPage);
+            if (pageNumber >= 1 && pageNumber <= totalPages) {
+                currentPage = pageNumber;
+                renderChannels(); // Re-render channels for the new page
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+            }
         }
 
         /**
@@ -970,7 +1257,7 @@
                 if (response.ok) {
                     textarea.value = '';
                     showNotification('Komentarz został dodany!');
-                    loadChannels();
+                    loadChannels(); // Reload channels to get updated comments
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania komentarza', 'error');
@@ -1006,7 +1293,7 @@
                 if (response.ok) {
                     document.getElementById('channelLink').value = '';
                     showNotification('Kanał został dodany!');
-                    loadChannels();
+                    loadChannels(); // Reload channels to show new one
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania kanału', 'error');
@@ -1018,66 +1305,144 @@
         }
 
         /**
-         * Filters channels based on the search input.
-         * After filtering, it re-applies the current sort order.
+         * Handles the boosting of a channel.
+         * Calls the backend API to update the boost timestamp and sets a 15-minute cooldown locally.
+         * @param {number} channelId The ID of the channel to boost.
          */
-        function searchChannels() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        async function handleBoostClick(channelId) {
+            if (!canBoostChannel(channelId)) {
+                showNotification('Możesz boostować ten kanał tylko raz na 15 minut.', 'error');
+                return;
+            }
 
-            if (!searchTerm) {
-                currentChannels = [...channels]; // Reset to all channels
-            } else {
-                currentChannels = channels.filter(channel =>
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/boost`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({}) // Send empty body if backend doesn't require specific data
+                });
+
+                if (response.ok) {
+                    showNotification('Kanał został zboostowany!');
+                    // Update localStorage after successful boost (client-side cooldown)
+                    const boostedChannels = getBoostedChannelsFromLocalStorage();
+                    boostedChannels[channelId] = Date.now();
+                    setBoostedChannelsToLocalStorage(boostedChannels);
+
+                    // Reload channels to get the new global order from backend
+                    loadChannels();
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas boostowania kanału', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas wysyłania boosta:', error);
+                showNotification('Błąd połączenia z serwerem podczas boostowania.', 'error');
+            }
+        }
+
+        /**
+         * Handles the unboosting of a channel.
+         * Calls the backend API to set the last_boosted timestamp to a very old date.
+         * @param {number} channelId The ID of the channel to unboost.
+         */
+        async function handleUnboostClick(channelId) {
+            if (!canUnboostChannel(channelId)) {
+                showNotification('Możesz unboostować ten kanał tylko raz na 15 minut.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/unboost`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({})
+                });
+
+                if (response.ok) {
+                    showNotification('Kanał został przeniesiony na dół listy.');
+                    // Update localStorage for the unboost cooldown
+                    const unboostedChannels = getUnboostedChannelsFromLocalStorage();
+                    unboostedChannels[channelId] = Date.now();
+                    setUnboostedChannelsToLocalStorage(unboostedChannels);
+
+                    // Reload channels to get the new global order from backend
+                    loadChannels();
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas unboostowania kanału', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas wysyłania unboosta:', error);
+                showNotification('Błąd połączenia z serwerem podczas unboostowania.', 'error');
+            }
+        }
+
+
+        /**
+         * Applies search filter and sort order to the full list of channels.
+         * Then renders the current page.
+         */
+        function applyFiltersAndSorting() {
+            let tempChannels = [...channels]; // Start with all channels
+
+            // Apply search filter
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (searchTerm) {
+                tempChannels = tempChannels.filter(channel =>
                     channel.name.toLowerCase().includes(searchTerm) ||
                     channel.description.toLowerCase().includes(searchTerm)
                 );
             }
-            sortChannels(); // Apply current sort to filtered results
-        }
 
-        /**
-         * Sorts the currentChannels array based on the selected sort option
-         * and then re-renders them.
-         */
-        function sortChannels() {
+            // Apply sorting
             const sortOption = document.getElementById('sortSelect').value;
-
+            // Note: Primary sorting by 'last_boosted' is handled by the backend (get_channels SQL query).
+            // This client-side sort will apply on top of that, or if 'default' is chosen,
+            // it will simply rely on the order returned by the backend.
             switch (sortOption) {
                 case 'rating_desc':
-                    currentChannels.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    tempChannels.sort((a, b) => (b.rating || 0) - (a.rating || 0));
                     break;
                 case 'rating_asc':
-                    currentChannels.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+                    tempChannels.sort((a, b) => (a.rating || 0) - (b.rating || 0));
                     break;
                 case 'ratings_count_desc':
-                    currentChannels.sort((a, b) => (b.ratingsCount || 0) - (a.ratingsCount || 0));
+                    tempChannels.sort((a, b) => (b.ratingsCount || 0) - (a.ratingsCount || 0));
                     break;
                 case 'ratings_count_asc':
-                    currentChannels.sort((a, b) => (a.ratingsCount || 0) - (b.ratingsCount || 0));
+                    tempChannels.sort((a, b) => (a.ratingsCount || 0) - (b.ratingsCount || 0));
                     break;
                 case 'followers_desc':
-                    currentChannels.sort((a, b) => (b.followerCount || 0) - (a.followerCount || 0));
+                    tempChannels.sort((a, b) => (b.followerCount || 0) - (a.followerCount || 0));
                     break;
                 case 'followers_asc':
-                    currentChannels.sort((a, b) => (a.followerCount || 0) - (b.followerCount || 0));
+                    tempChannels.sort((a, b) => (a.followerCount || 0) - (b.followerCount || 0));
                     break;
                 case 'default':
                 default:
-                    // Keep original order or a stable default (e.g., by ID if available)
-                    // For now, we'll rely on the order from the API for 'default'
-                    // If you need a truly stable default, add an 'id' property and sort by it.
-                    currentChannels = [...channels]; // Reset to initial fetch order
-                    // Re-apply search filter if there's a search term
-                    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-                    if (searchTerm) {
-                        currentChannels = currentChannels.filter(channel =>
-                            channel.name.toLowerCase().includes(searchTerm) ||
-                            channel.description.toLowerCase().includes(searchTerm)
-                        );
-                    }
+                    // For 'default', we rely on the backend's primary sort (last_boosted DESC).
+                    // If a search term is present, we filter but maintain the backend's order among filtered items.
                     break;
             }
-            renderChannels(currentChannels);
+
+            filteredAndSortedChannels = tempChannels;
+            currentPage = 1; // Reset to first page after filter/sort
+            renderChannels();
+        }
+
+        /**
+         * Calls applyFiltersAndSorting to perform both operations.
+         */
+        function searchChannels() {
+            applyFiltersAndSorting();
+        }
+
+        /**
+         * Calls applyFiltersAndSorting to perform both operations.
+         */
+        function sortChannels() {
+            applyFiltersAndSorting();
         }
 
         /**
@@ -1095,6 +1460,24 @@
                 // Show instructions
                 instructionsSection.classList.add('show');
                 toggleInstructionsBtn.textContent = 'Ukryj instrukcję';
+            }
+        }
+
+        /**
+         * Toggles the visibility of the collapsible content within a channel card.
+         * @param {Event} event The click event object.
+         * @param {number} channelId The ID of the channel whose content to toggle.
+         */
+        function toggleChannelContent(event, channelId) {
+            const collapsibleContent = document.getElementById(`collapsibleContent-${channelId}`);
+            const toggleButton = event.target;
+
+            if (collapsibleContent.classList.contains('show')) {
+                collapsibleContent.classList.remove('show');
+                toggleButton.textContent = '...Pokaż więcej';
+            } else {
+                collapsibleContent.classList.add('show');
+                toggleButton.textContent = '...Pokaż mniej';
             }
         }
 
