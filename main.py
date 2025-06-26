@@ -29,12 +29,12 @@ ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') # Ustaw to 
 ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') # Token do autoryzacji operacji
 
 def verify_admin_token(request_headers):
-    """Verifies if the request contains the correct admin authentication token."""
+    """Weryfikuje, czy żądanie zawiera poprawny token autoryzacji administratora."""
     auth_header = request_headers.get('Authorization')
     if not auth_header:
         return False
     try:
-        # Expected format: "Bearer <token>"
+        # Oczekiwany format: "Bearer <token>"
         token_type, token = auth_header.split(None, 1)
     except ValueError:
         return False
@@ -44,27 +44,25 @@ def verify_admin_token(request_headers):
 
 
 def get_db_connection():
-    """Establishes and returns a PostgreSQL database connection."""
+    """Ustanawia i zwraca połączenie z bazą danych PostgreSQL."""
     if not DATABASE_URL:
-        print("ERROR: DATABASE_URL environment variable not set. Please configure it in Render.com environment variables.")
-        raise ValueError("DATABASE_URL environment variable not set.")
+        print("ERROR: Zmienna środowiskowa DATABASE_URL nie jest ustawiona. Skonfiguruj ją w zmiennych środowiskowych Render.com.")
+        raise ValueError("Zmienna środowiskowa DATABASE_URL nie jest ustawiona.")
     try:
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         return conn
     except Exception as e:
-        print(f"ERROR: Failed to connect to the database using DATABASE_URL: {DATABASE_URL[:30]}... (truncated). Full error: {e}")
+        print(f"ERROR: Nie udało się połączyć z bazą danych przy użyciu DATABASE_URL: {DATABASE_URL[:30]}... (skrócone). Pełny błąd: {e}")
         raise
 
 def initialize_db():
-    """Initializes the database schema if tables do not exist."""
+    """Inicjalizuje schemat bazy danych, jeśli tabele nie istnieją."""
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Usunięto tabelę users
-        # Zmieniono Channels, aby nie odwoływały się do user_id
         cur.execute("""
             CREATE TABLE IF NOT EXISTS channels (
                 id SERIAL PRIMARY KEY,
@@ -75,36 +73,34 @@ def initialize_db():
                 follower_count INTEGER DEFAULT 0,
                 average_rating REAL DEFAULT 0.0,
                 ratings_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_boosted TIMESTAMP DEFAULT NULL -- Dodano nową kolumnę
             );
         """)
 
-        # Zmieniono Comments, aby nie odwoływały się do author_id
         cur.execute("""
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
                 channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
-                author VARCHAR(255) DEFAULT 'Anonimowy użytkownik', -- Autor jako zwykły string
+                author VARCHAR(255) DEFAULT 'Anonimowy użytkownik',
                 text TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
 
-        # Zmieniono Ratings, aby nie odwoływały się do user_id
         cur.execute("""
             CREATE TABLE IF NOT EXISTS ratings (
                 id SERIAL PRIMARY KEY,
                 score INTEGER NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE
-                -- Usunięto user_id
             );
         """)
 
         conn.commit()
-        print("Database tables checked/created successfully.")
+        print("Tabele bazy danych zostały sprawdzone/utworzone pomyślnie.")
     except Exception as e:
-        print(f"ERROR: Error initializing database schema: {e}")
+        print(f"ERROR: Błąd podczas inicjalizacji schematu bazy danych: {e}")
         raise
     finally:
         if cur:
@@ -116,17 +112,17 @@ try:
     with app.app_context():
         initialize_db()
 except Exception as e:
-    print(f"CRITICAL ERROR during database initialization: {e}")
+    print(f"KRYTYCZNY BŁĄD podczas inicjalizacji bazy danych: {e}")
     pass
 
 
 def fetch_channel_details_from_whatsapp_page(url):
     """
-    Attempts to scrape channel name, description, and follower count from the WhatsApp channel URL.
-    WARNING: This approach is highly unreliable for dynamic websites like WhatsApp.
-    WhatsApp uses JavaScript to render content and has strong anti-scraping measures.
-    This function is for demonstration/attempt purposes.
-    It is likely to be blocked or return incomplete data.
+    Próbuje pobrać nazwę kanału, opis i liczbę obserwujących z adresu URL kanału WhatsApp.
+    OSTRZEŻENIE: Ta metoda jest wysoce zawodna dla dynamicznych stron internetowych, takich jak WhatsApp.
+    WhatsApp używa JavaScript do renderowania treści i ma silne środki antyskapingowe.
+    Ta funkcja służy do celów demonstracyjnych/próbnych.
+    Prawdopodobnie zostanie zablokowana lub zwróci niekompletne dane.
     """
     channel_name = None
     channel_description = None
@@ -142,35 +138,35 @@ def fetch_channel_details_from_whatsapp_page(url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # --- Attempt to find Channel Name ---
+        # --- Próba znalezienia nazwy kanału ---
         name_tag = soup.find('meta', property='og:title')
         if name_tag and name_tag.get('content'):
             channel_name = name_tag['content'].strip()
         else:
-            name_tag = soup.find('h1', class_='_aj1s') # Example based on some WhatsApp web elements
+            name_tag = soup.find('h1', class_='_aj1s') # Przykład na podstawie niektórych elementów WhatsApp web
             if name_tag:
                  channel_name = name_tag.get_text().strip()
             elif soup.find('title'):
                  channel_name = soup.find('title').get_text().replace(' | WhatsApp Channel', '').strip()
             if not channel_name:
-                channel_name = "WhatsApp Channel" # Fallback if no name found
+                channel_name = "Kanał WhatsApp" # Fallback, jeśli nie znaleziono nazwy
 
-        # --- Attempt to find Channel Description ---
+        # --- Próba znalezienia opisu kanału ---
         description_tag = soup.find('meta', property='og:description')
         if description_tag and description_tag.get('content'):
             channel_description = description_tag['content'].strip()
         else:
-            desc_tag = soup.find('span', {'dir': 'ltr', 'class': '_al_r'}) # Common description element
+            desc_tag = soup.find('span', {'dir': 'ltr', 'class': '_al_r'}) # Wspólny element opisu
             if desc_tag:
                 channel_description = desc_tag.get_text().strip()
-            elif soup.find('p', class_='_aj1s'): # Another possible description element
+            elif soup.find('p', class_='_aj1s'): # Inny możliwy element opisu
                  channel_description = soup.find('p', class_='_aj1s').get_text().strip()
 
         if not channel_description:
-            channel_description = "Brak dostępnego opisu." # Default description
+            channel_description = "Brak dostępnego opisu." # Domyślny opis
 
-        # --- Attempt to find Follower Count ---
-        # This is highly unreliable due to dynamic content and anti-scraping.
+        # --- Próba znalezienia liczby obserwujących ---
+        # Jest to bardzo zawodne ze względu na dynamiczną zawartość i środki antyskapingowe.
         follower_element = soup.find(text=lambda text: text and ("obserwujący" in text.lower() or "followers" in text.lower()))
         if follower_element:
             try:
@@ -191,53 +187,54 @@ def fetch_channel_details_from_whatsapp_page(url):
                         multiplier = 1000000000000
                     follower_count = int(num * multiplier)
             except ValueError:
-                print(f"DEBUG: Could not parse follower count from: '{text_with_followers}'")
-                pass # Keep default 0
+                print(f"DEBUG: Nie można było sparsować liczby obserwujących z: '{text_with_followers}'")
+                pass # Zachowaj domyślne 0
 
-        # --- Attempt to find Profile Image URL ---
+        # --- Próba znalezienia adresu URL obrazu profilowego ---
         image_tag = soup.find('meta', property='og:image')
         if image_tag and image_tag.get('content'):
             profile_image_url = image_tag['content'].strip()
         else:
-            # Look for common image elements within the page (e.g., img tags with specific classes)
-            img_element = soup.find('img', class_='_aj3u') # Example based on some WhatsApp web elements
+            # Szukaj typowych elementów obrazów na stronie (np. tagi img z określonymi klasami)
+            img_element = soup.find('img', class_='_aj3u') # Przykład na podstawie niektórych elementów WhatsApp web
             if img_element and img_element.get('src'):
                 profile_image_url = img_element['src'].strip()
 
 
     except requests.exceptions.RequestException as req_err:
-        print(f"ERROR: HTTP/Request error while fetching {url}: {req_err}")
+        print(f"ERROR: Błąd HTTP/żądania podczas pobierania {url}: {req_err}")
         parsed_url = urlparse(url)
-        channel_name = parsed_url.path.strip('/').split('/')[-1] # Fallback name
+        channel_name = parsed_url.path.strip('/').split('/')[-1] # Fallbackowa nazwa
         channel_description = "Nie udało się pobrać opisu z powodu błędu połączenia."
         follower_count = 0
         profile_image_url = None
     except Exception as e:
-        print(f"ERROR: General error during scraping {url}: {e}")
+        print(f"ERROR: Ogólny błąd podczas skanowania {url}: {e}")
         parsed_url = urlparse(url)
-        channel_name = parsed_url.path.strip('/').split('/')[-1] # Fallback name
+        channel_name = parsed_url.path.strip('/').split('/')[-1] # Fallbackowa nazwa
         channel_description = "Nie udało się pobrać opisu z powodu błędu parsowania."
         follower_count = 0
         profile_image_url = None
 
-    print(f"DEBUG: Scraped results for {url}: Name='{channel_name}', Description='{channel_description}', Followers={follower_count}, Image='{profile_image_url}'")
+    print(f"DEBUG: Wyniki skanowania dla {url}: Nazwa='{channel_name}', Opis='{channel_description}', Obserwujący={follower_count}, Obraz='{profile_image_url}'")
     return {"name": channel_name, "description": channel_description, "follower_count": follower_count, "profile_image_url": profile_image_url}
 
 
 @app.route('/')
 def index():
-    """Serves the main HTML page or acts as a health check."""
+    """Obsługuje główną stronę HTML lub działa jako kontrola zdrowia."""
     return "Backend dla Whapineo działa. Dostęp do /api/channels, etc."
 
 @app.route('/api/channels', methods=['GET'])
 def get_channels():
-    """Fetches all channels from the database."""
+    """Pobiera wszystkie kanały z bazy danych, sortując je według ostatniego boostowania."""
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY created_at DESC;")
+        # Sortowanie: najpierw kanały z ostatnim boostem, potem według daty utworzenia
+        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
@@ -259,7 +256,7 @@ def get_channels():
                 'rating': channel[4] if channel[4] is not None else 0.0,
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
                 'followerCount': channel[6] if channel[6] is not None else 0,
-                'profileImageUrl': channel[7], # Dodano profile_image_url
+                'profileImageUrl': channel[7],
                 'comments': comments_list
             })
         return jsonify(channels_list)
@@ -342,7 +339,7 @@ def add_channel():
 # --- Admin API Endpoints (pozostają zabezpieczone tokenem) ---
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
-    """Authenticates admin users and returns a token."""
+    """Uwierzytelnia administratorów i zwraca token."""
     data = request.get_json()
     pass1 = data.get('passwordOne')
     pass2 = data.get('passwordTwo')
@@ -351,15 +348,15 @@ def admin_login():
         return jsonify({'error': 'Hasła administratora nie są skonfigurowane na serwerze.'}), 500
 
     if pass1 == ADMIN_PASS1 and pass2 == ADMIN_PASS2:
-        return jsonify({"message": "Login successful", "token": ADMIN_AUTH_TOKEN}), 200
+        return jsonify({"message": "Pomyślne logowanie", "token": ADMIN_AUTH_TOKEN}), 200
     else:
         return jsonify({"error": "Nieprawidłowe hasła administratora."}), 401
 
 @app.route('/api/channels/<int:channel_id>', methods=['DELETE'])
 def delete_channel(channel_id):
-    """Deletes a specific channel from the database (admin only)."""
+    """Usuwa określony kanał z bazy danych (tylko dla administratora)."""
     if not verify_admin_token(request.headers):
-        return jsonify({"error": "Unauthorized: Invalid or missing token"}), 403
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
 
     conn = None
     cur = None
@@ -387,18 +384,18 @@ def delete_channel(channel_id):
 
 @app.route('/api/channels/all', methods=['DELETE'])
 def clear_all_channels():
-    """Deletes all channels and comments from the database (admin only)."""
+    """Usuwa wszystkie kanały i komentarze z bazy danych (tylko dla administratora)."""
     if not verify_admin_token(request.headers):
-        return jsonify({"error": "Unauthorized: Invalid or missing token"}), 403
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
 
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Order matters: comments first due to foreign key constraint, then ratings
+        # Kolejność ma znaczenie: najpierw komentarze ze względu na ograniczenie klucza obcego, potem oceny
         cur.execute("DELETE FROM comments;")
-        cur.execute("DELETE FROM ratings;") # Usunięto tabelę comments, więc trzeba usunąć ratings
+        cur.execute("DELETE FROM ratings;")
         cur.execute("DELETE FROM channels;")
         conn.commit()
         return jsonify({"message": "Wszystkie kanały i komentarze zostały usunięte."}), 200
@@ -465,7 +462,7 @@ def add_comment_to_channel(channel_id):
     """Dodaje komentarz do określonego kanału."""
     data = request.get_json()
     text = data.get('text')
-    author = data.get('author', 'Anonimowy użytkownik') # Default author if not provided by frontend
+    author = data.get('author', 'Anonimowy użytkownik') # Domyślny autor, jeśli nie podany przez frontend
 
     if not text:
         return jsonify({"error": "Tekst komentarza jest wymagany."}), 400
@@ -486,6 +483,37 @@ def add_comment_to_channel(channel_id):
         if conn:
             conn.rollback()
         return jsonify({"error": "Błąd podczas dodawania komentarza"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+@app.route('/api/channels/<int:channel_id>/boost', methods=['POST'])
+def boost_channel(channel_id):
+    """Aktualizuje znacznik czasu ostatniego boostowania kanału na bieżący czas."""
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            "UPDATE channels SET last_boosted = CURRENT_TIMESTAMP WHERE id = %s RETURNING name;",
+            (channel_id,)
+        )
+        boosted_channel_name = cur.fetchone()
+        conn.commit()
+
+        if boosted_channel_name:
+            return jsonify({"message": f"Kanał '{boosted_channel_name[0]}' został pomyślnie zboostowany!"}), 200
+        else:
+            return jsonify({"error": "Kanał nie znaleziony."}), 404
+    except Exception as e:
+        print(f"ERROR: Błąd podczas boostowania kanału {channel_id}: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Błąd podczas boostowania kanału."}), 500
     finally:
         if cur:
             cur.close()
