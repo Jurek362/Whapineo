@@ -42,26 +42,31 @@ def verify_admin_token(request_headers):
         return True
     return False
 
+
 def get_db_connection():
     """Ustanawia i zwraca połączenie z bazą danych PostgreSQL."""
     if not DATABASE_URL:
         print("ERROR: Zmienna środowiskowa DATABASE_URL nie jest ustawiona. Skonfiguruj ją w zmiennych środowiskowych Render.com.")
         raise ValueError("Zmienna środowiskowa DATABASE_URL nie jest ustawiona.")
     try:
+        # Upewnij się, że sslmode='require' jest używane dla Render.com
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         return conn
     except Exception as e:
         print(f"ERROR: Nie udało się połączyć z bazą danych przy użyciu DATABASE_URL: {DATABASE_URL[:30]}... (skrócone). Pełny błąd: {e}")
+        # Re-raise the exception to indicate a critical startup failure
         raise
 
 def initialize_db():
-    """Inicjalizuje schemat bazy danych, jeśli tabele nie istnieją."""
+    """Inicjalizuje schemat bazy danych, jeśli tabele nie istnieją,
+    oraz aktualizuje istniejące kolumny (np. zmieniając nazwę)."""
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # Utwórz tabelę 'channels' z kolumną 'rating'
         cur.execute("""
             CREATE TABLE IF NOT EXISTS channels (
                 id SERIAL PRIMARY KEY,
@@ -70,13 +75,38 @@ def initialize_db():
                 link VARCHAR(500) NOT NULL UNIQUE,
                 profile_image_url VARCHAR(500),
                 follower_count INTEGER DEFAULT 0,
-                average_rating REAL DEFAULT 0.0,
+                rating REAL DEFAULT 0.0, -- Zmieniono z 'average_rating' na 'rating'
                 ratings_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_boosted TIMESTAMP DEFAULT NULL
             );
         """)
+        conn.commit() # Commit the table creation immediately
 
+        # Spróbuj zmienić nazwę kolumny 'average_rating' na 'rating', jeśli istnieje
+        # Ta operacja musi być wykonywana w oddzielnej transakcji lub z autocommit
+        # Używamy SAVEPOINT dla bardziej granularnej kontroli w obrębie transakcji
+        try:
+            cur.execute("SAVEPOINT sp1;") # Ustawienie punktu zapisu
+            cur.execute("""
+                ALTER TABLE channels RENAME COLUMN average_rating TO rating;
+            """)
+            print("INFO: Kolumna 'average_rating' w tabeli 'channels' została pomyślnie zmieniona na 'rating'.")
+        except psycopg2.ProgrammingError as e:
+            conn.rollback() # Rollback do punktu zapisu w przypadku błędu
+            if "column \"average_rating\" does not exist" in str(e):
+                print("INFO: Kolumna 'average_rating' nie istnieje w tabeli 'channels', nie ma potrzeby zmiany nazwy.")
+            elif "column \"rating\" already exists" in str(e) and "cannot rename" in str(e):
+                print("INFO: Kolumna 'rating' już istnieje i kolumna 'average_rating' nie mogła zostać zmieniona (możliwa wcześniejsza migracja).")
+            else:
+                print(f"WARNING: Nieoczekiwany błąd podczas próby zmiany nazwy kolumny 'average_rating': {e}")
+        except Exception as e:
+            conn.rollback() # Rollback całej transakcji w przypadku innego błędu
+            print(f"WARNING: Ogólny błąd podczas operacji ALTER TABLE: {e}")
+        finally:
+            conn.commit() # Zatwierdź lub zrolbackuj transakcję ALTER TABLE
+
+        # Utwórz inne tabele (comments i ratings), jeśli nie istnieją
         cur.execute("""
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
@@ -86,7 +116,6 @@ def initialize_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS ratings (
                 id SERIAL PRIMARY KEY,
@@ -95,24 +124,31 @@ def initialize_db():
                 channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE
             );
         """)
-
-        conn.commit()
-        print("Tabele bazy danych zostały sprawdzone/utworzone pomyślnie.")
+        conn.commit() # Commit pozostałych tabel
+        print("INFO: Pozostałe tabele bazy danych zostały sprawdzone/utworzone pomyślnie.")
     except Exception as e:
         print(f"ERROR: Błąd podczas inicjalizacji schematu bazy danych: {e}")
-        raise
+        raise # Ponownie zgłoś wyjątek, aby wskazać krytyczny błąd uruchamiania
     finally:
         if cur:
             cur.close()
         if conn:
             conn.close()
 
-try:
-    with app.app_context():
+# Inicjalizacja bazy danych przy starcie aplikacji
+# Używamy app.before_first_request aby upewnić się, że to zostanie wywołane raz
+# przed pierwszym żądaniem, ale po kontekście aplikacji.
+@app.before_first_request
+def setup_database():
+    try:
         initialize_db()
-except Exception as e:
-    print(f"KRYTYCZNY BŁĄD podczas inicjalizacji bazy danych: {e}")
-    pass
+    except Exception as e:
+        print(f"KRYTYCZNY BŁĄD: Nie udało się zainicjalizować bazy danych przy starcie aplikacji: {e}")
+        # W zależności od wymaganej odporności, tutaj można by zakończyć aplikację
+        # lub pozwolić jej działać z ograniczeniami, ale z wyraźnym logowaniem.
+        # Na Renderze, niepowodzenie połączenia z bazą danych na starcie często
+        # oznacza, że aplikacja nie będzie działać poprawnie.
+
 
 def is_valid_whatsapp_channel_link(link):
     """
@@ -244,7 +280,8 @@ def get_channels():
         conn = get_db_connection()
         cur = conn.cursor()
         # Sortowanie: najpierw kanały z ostatnim boostem, potem według daty utworzenia
-        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
+        # Używamy kolumny 'rating'
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
@@ -303,9 +340,9 @@ def add_channel():
     # Próba scrapingu
     scraped_data = fetch_channel_details_from_whatsapp_page(link)
     
-    # NOWA WALIDACJA: Jeśli nazwa to "WhatsApp Channel", zablokuj dodawanie
-    if scraped_data and scraped_data['name'] == "WhatsApp Channel":
-        return jsonify({"error": "Nie można dodać kanału o nazwie 'WhatsApp Channel'. Prawdopodobnie link prowadzi do nieistniejącego lub ogólnego kanału."}), 400
+    # NOWA WALIDACJA: Jeśli nazwa to "Kanał WhatsApp", zablokuj dodawanie
+    if scraped_data and scraped_data['name'] == "Kanał WhatsApp": # Zmieniono na "Kanał WhatsApp" by pasowało do fallabacku w fetch_channel_details
+        return jsonify({"error": "Nie można dodać kanału o nazwie 'Kanał WhatsApp'. Prawdopodobnie link prowadzi do nieistniejącego lub ogólnego kanału."}), 400
 
     name = scraped_data['name'] if scraped_data and scraped_data['name'] else frontend_name # Użyj scraped, fallback do frontend
     description = scraped_data['description'] if scraped_data and scraped_data['description'] else frontend_description # Użyj scraped, fallback do frontend
@@ -443,8 +480,8 @@ def rate_channel(channel_id):
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Get current rating and count
-        cur.execute("SELECT average_rating, ratings_count FROM channels WHERE id = %s;", (channel_id,))
+        # Get current rating and count - teraz używamy kolumny 'rating'
+        cur.execute("SELECT rating, ratings_count FROM channels WHERE id = %s;", (channel_id,))
         result = cur.fetchone()
 
         if not result:
@@ -457,8 +494,9 @@ def rate_channel(channel_id):
         new_ratings_count = current_ratings_count + 1
         new_avg_rating = new_total_rating / new_ratings_count
 
+        # Update the database - teraz używamy kolumny 'rating'
         cur.execute(
-            "UPDATE channels SET average_rating = %s, ratings_count = %s WHERE id = %s;",
+            "UPDATE channels SET rating = %s, ratings_count = %s WHERE id = %s;",
             (new_avg_rating, new_ratings_count, channel_id)
         )
         conn.commit()
