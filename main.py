@@ -1,13 +1,12 @@
-# main.py - Flask Backend for Whapineo
+# main.py - Flask Backend for Whapineo (without user accounts/JWT)
 
 import os
 import json
 import psycopg2
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, request, jsonify 
+from flask import Flask, request, jsonify, abort
 from datetime import datetime
-import time 
 from dotenv import load_dotenv
 from flask_cors import CORS
 from urllib.parse import urlparse
@@ -17,26 +16,17 @@ import re
 load_dotenv()
 
 app = Flask(__name__)
-# Initialize CORS - allows requests from all origins for now.
+# Initialize CORS - allows requests from all origins (*)
 CORS(app)
 
 # Database connection details
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # --- Admin Panel Passwords (from Environment Variables) ---
-# WARNING: Storing passwords directly in environment variables is NOT secure for production.
-# This is for demonstration purposes only.
-# In production, use a proper authentication system with hashed passwords in a database.
-ADMIN_PASS1 = os.environ.get('ADMIN_PASS1', 'default_admin123') 
-ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') 
-ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') 
-
-# --- WhatsApp Specific Constants ---
-# Default profile image URL that indicates a non-existent or inaccessible channel
-WHATSAPP_DEFAULT_PROFILE_IMAGE = "https://static.whatsapp.net/rsrc.php/v4/yo/r/J5gK5AgJ_L5.png"
-
-# --- Rating Limit Constants ---
-ONE_DAY_IN_SECONDS = 24 * 60 * 60 # 24 hours in seconds
+# This remains separate for admin panel authentication.
+ADMIN_PASS1 = os.environ.get('ADMIN_PASS1', 'default_admin123') # Ustaw to na Render.com
+ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') # Ustaw to na Render.com
+ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') # Token do autoryzacji operacji
 
 def verify_admin_token(request_headers):
     """Verifies if the request contains the correct admin authentication token."""
@@ -73,27 +63,41 @@ def initialize_db():
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # Usunięto tabelę users
+        # Zmieniono Channels, aby nie odwoływały się do user_id
         cur.execute("""
             CREATE TABLE IF NOT EXISTS channels (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(500) NOT NULL, -- Increased length
+                name VARCHAR(255) NOT NULL,
                 description TEXT,
-                link VARCHAR(1000) NOT NULL UNIQUE, -- Increased length
+                link VARCHAR(500) NOT NULL UNIQUE,
+                profile_image_url VARCHAR(500),
+                follower_count INTEGER DEFAULT 0,
                 average_rating REAL DEFAULT 0.0,
                 ratings_count INTEGER DEFAULT 0,
-                follower_count INTEGER DEFAULT 0,
-                profile_image_url VARCHAR(500), -- Increased length
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
 
+        # Zmieniono Comments, aby nie odwoływały się do author_id
         cur.execute("""
             CREATE TABLE IF NOT EXISTS comments (
                 id SERIAL PRIMARY KEY,
                 channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
-                author VARCHAR(255) DEFAULT 'Użytkownik',
+                author VARCHAR(255) DEFAULT 'Anonimowy użytkownik', -- Autor jako zwykły string
                 text TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+
+        # Zmieniono Ratings, aby nie odwoływały się do user_id
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS ratings (
+                id SERIAL PRIMARY KEY,
+                score INTEGER NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE
+                -- Usunięto user_id
             );
         """)
 
@@ -118,7 +122,7 @@ except Exception as e:
 
 def fetch_channel_details_from_whatsapp_page(url):
     """
-    Attempts to scrape channel name, description, follower count, and profile image URL from the WhatsApp channel URL.
+    Attempts to scrape channel name, description, and follower count from the WhatsApp channel URL.
     WARNING: This approach is highly unreliable for dynamic websites like WhatsApp.
     WhatsApp uses JavaScript to render content and has strong anti-scraping measures.
     This function is for demonstration/attempt purposes.
@@ -127,7 +131,7 @@ def fetch_channel_details_from_whatsapp_page(url):
     channel_name = None
     channel_description = None
     follower_count = 0
-    profile_image_url = None # New: for profile image URL
+    profile_image_url = None
 
     try:
         headers = {
@@ -143,31 +147,30 @@ def fetch_channel_details_from_whatsapp_page(url):
         if name_tag and name_tag.get('content'):
             channel_name = name_tag['content'].strip()
         else:
-            name_tag = soup.find('h1', class_='_aj1s')
+            name_tag = soup.find('h1', class_='_aj1s') # Example based on some WhatsApp web elements
             if name_tag:
                  channel_name = name_tag.get_text().strip()
             elif soup.find('title'):
                  channel_name = soup.find('title').get_text().replace(' | WhatsApp Channel', '').strip()
             if not channel_name:
-                channel_name = "WhatsApp Channel"
-
+                channel_name = "WhatsApp Channel" # Fallback if no name found
 
         # --- Attempt to find Channel Description ---
         description_tag = soup.find('meta', property='og:description')
         if description_tag and description_tag.get('content'):
             channel_description = description_tag['content'].strip()
         else:
-            desc_tag = soup.find('span', {'dir': 'ltr', 'class': '_al_r'})
+            desc_tag = soup.find('span', {'dir': 'ltr', 'class': '_al_r'}) # Common description element
             if desc_tag:
                 channel_description = desc_tag.get_text().strip()
-            elif soup.find('p', class_='_aj1s'):
+            elif soup.find('p', class_='_aj1s'): # Another possible description element
                  channel_description = soup.find('p', class_='_aj1s').get_text().strip()
 
         if not channel_description:
-            channel_description = "Brak dostępnego opisu."
-
+            channel_description = "Brak dostępnego opisu." # Default description
 
         # --- Attempt to find Follower Count ---
+        # This is highly unreliable due to dynamic content and anti-scraping.
         follower_element = soup.find(text=lambda text: text and ("obserwujący" in text.lower() or "followers" in text.lower()))
         if follower_element:
             try:
@@ -189,38 +192,33 @@ def fetch_channel_details_from_whatsapp_page(url):
                     follower_count = int(num * multiplier)
             except ValueError:
                 print(f"DEBUG: Could not parse follower count from: '{text_with_followers}'")
-                pass
-        
-        # --- Attempt to find Profile Image URL ---
-        # Look for the Open Graph image meta tag first
-        og_image_tag = soup.find('meta', property='og:image')
-        if og_image_tag and og_image_tag.get('content'):
-            profile_image_url = og_image_tag['content'].strip()
-        else:
-            # Fallback: Try to find an <img> tag with a common class for avatars
-            # This is highly speculative and might need adjustment based on actual WhatsApp HTML
-            img_tag = soup.find('img', class_='_aogp') # Example class, needs verification
-            if img_tag and img_tag.get('src'):
-                profile_image_url = img_tag['src'].strip()
+                pass # Keep default 0
 
-        if not profile_image_url:
-            print(f"DEBUG: Could not find profile image URL for {url}")
+        # --- Attempt to find Profile Image URL ---
+        image_tag = soup.find('meta', property='og:image')
+        if image_tag and image_tag.get('content'):
+            profile_image_url = image_tag['content'].strip()
+        else:
+            # Look for common image elements within the page (e.g., img tags with specific classes)
+            img_element = soup.find('img', class_='_aj3u') # Example based on some WhatsApp web elements
+            if img_element and img_element.get('src'):
+                profile_image_url = img_element['src'].strip()
 
 
     except requests.exceptions.RequestException as req_err:
         print(f"ERROR: HTTP/Request error while fetching {url}: {req_err}")
         parsed_url = urlparse(url)
-        channel_name = parsed_url.path.strip('/').split('/')[-1]
+        channel_name = parsed_url.path.strip('/').split('/')[-1] # Fallback name
         channel_description = "Nie udało się pobrać opisu z powodu błędu połączenia."
         follower_count = 0
-        profile_image_url = None # Ensure it's None on error
+        profile_image_url = None
     except Exception as e:
         print(f"ERROR: General error during scraping {url}: {e}")
         parsed_url = urlparse(url)
-        channel_name = parsed_url.path.strip('/').split('/')[-1]
+        channel_name = parsed_url.path.strip('/').split('/')[-1] # Fallback name
         channel_description = "Nie udało się pobrać opisu z powodu błędu parsowania."
         follower_count = 0
-        profile_image_url = None # Ensure it's None on error
+        profile_image_url = None
 
     print(f"DEBUG: Scraped results for {url}: Name='{channel_name}', Description='{channel_description}', Followers={follower_count}, Image='{profile_image_url}'")
     return {"name": channel_name, "description": channel_description, "follower_count": follower_count, "profile_image_url": profile_image_url}
@@ -233,14 +231,13 @@ def index():
 
 @app.route('/api/channels', methods=['GET'])
 def get_channels():
-    """Fetches all channels from the database, sorted by average rating and then by ratings count."""
+    """Fetches all channels from the database."""
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Changed sorting: primary by average_rating DESC, secondary by ratings_count DESC
-        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY average_rating DESC, ratings_count DESC;")
+        cur.execute("SELECT id, name, description, link, average_rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
@@ -262,7 +259,7 @@ def get_channels():
                 'rating': channel[4] if channel[4] is not None else 0.0,
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
                 'followerCount': channel[6] if channel[6] is not None else 0,
-                'profileImageUrl': channel[7], 
+                'profileImageUrl': channel[7], # Dodano profile_image_url
                 'comments': comments_list
             })
         return jsonify(channels_list)
@@ -277,9 +274,15 @@ def get_channels():
 
 @app.route('/api/channels', methods=['POST'])
 def add_channel():
-    """Dodaje nowy kanał do bazy danych, próbując pobrać nazwę, opis, liczbę obserwujących i URL obrazu profilowego z linku."""
+    """Dodaje nowy kanał do bazy danych, próbując pobrać nazwę, opis i liczbę obserwujących z linku."""
     data = request.get_json()
     link = data.get('link')
+    # Frontend może wysłać name/description/profileImageUrl, ale backend to nadpisze scrapingiem.
+    # Używamy ich jako fallback, jeśli scraping zawiedzie.
+    frontend_name = data.get('name')
+    frontend_description = data.get('description')
+    frontend_profile_image_url = data.get('profileImageUrl')
+
 
     if not link:
         return jsonify({"error": "Pole 'link' jest wymagane."}), 400
@@ -288,36 +291,38 @@ def add_channel():
     if not (parsed_url.netloc.endswith('whatsapp.com') and parsed_url.path.startswith('/channel/')):
         return jsonify({"error": "Nieprawidłowy format linku kanału WhatsApp. Oczekiwany format: https://whatsapp.com/channel/..."}), 400
 
+    # Próba scrapingu
     scraped_data = fetch_channel_details_from_whatsapp_page(link)
-    name = scraped_data['name']
-    description = scraped_data['description']
+    name = scraped_data['name'] if scraped_data['name'] else frontend_name # Użyj scraped, fallback do frontend
+    description = scraped_data['description'] if scraped_data['description'] else frontend_description # Użyj scraped, fallback do frontend
     follower_count = scraped_data['follower_count']
-    profile_image_url = scraped_data['profile_image_url'] 
+    profile_image_url = scraped_data['profile_image_url'] if scraped_data['profile_image_url'] else frontend_profile_image_url
 
-    # Ulepszone sprawdzanie czy kanał istnieje i jest dostępny
-    # Jeśli nazwa to domyślny fallback LUB nie udało się pobrać nazwy
-    # ORAZ (url obrazu profilowego to None LUB url obrazu profilowego to znany domyślny obraz WhatsApp)
-    if (name == "WhatsApp Channel" or name is None) and \
-       (profile_image_url is None or profile_image_url == WHATSAPP_DEFAULT_PROFILE_IMAGE):
-        return jsonify({"error": "Kanał nie istnieje! Nie udało się pobrać danych z podanego linku."}), 400
-
+    # Ostateczne fallbacki, jeśli scraping i frontend nie dostarczyły danych
     if not name:
-        name = parsed_url.path.strip('/').split('/')[-1] 
-
-
+        name = parsed_url.path.strip('/').split('/')[-1] # Fallback to ID if scraping/frontend name fails
+    if not description:
+        description = "Brak dostępnego opisu."
+    
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Include profile_image_url in INSERT statement
         cur.execute(
             "INSERT INTO channels (name, description, link, follower_count, profile_image_url) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
             (name, description, link, follower_count, profile_image_url)
         )
         channel_id = cur.fetchone()[0]
         conn.commit()
-        return jsonify({"message": "Kanał dodany pomyślnie", "id": channel_id, "name": name, "description": description, "followerCount": follower_count, "profileImageUrl": profile_image_url}), 201
+        return jsonify({
+            "message": "Kanał dodany pomyślnie",
+            "id": channel_id,
+            "name": name,
+            "description": description,
+            "followerCount": follower_count,
+            "profileImageUrl": profile_image_url
+        }), 201
     except psycopg2.errors.UniqueViolation:
         if conn:
             conn.rollback()
@@ -334,7 +339,7 @@ def add_channel():
         if conn:
             conn.close()
 
-# --- Admin API Endpoints ---
+# --- Admin API Endpoints (pozostają zabezpieczone tokenem) ---
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
     """Authenticates admin users and returns a token."""
@@ -342,12 +347,13 @@ def admin_login():
     pass1 = data.get('passwordOne')
     pass2 = data.get('passwordTwo')
 
-    # Passwords are now read from environment variables
-    # This check now uses the environment variables directly
+    if not ADMIN_PASS1 or not ADMIN_PASS2:
+        return jsonify({'error': 'Hasła administratora nie są skonfigurowane na serwerze.'}), 500
+
     if pass1 == ADMIN_PASS1 and pass2 == ADMIN_PASS2:
         return jsonify({"message": "Login successful", "token": ADMIN_AUTH_TOKEN}), 200
     else:
-        return jsonify({"error": "Invalid credentials"}), 401
+        return jsonify({"error": "Nieprawidłowe hasła administratora."}), 401
 
 @app.route('/api/channels/<int:channel_id>', methods=['DELETE'])
 def delete_channel(channel_id):
@@ -390,8 +396,9 @@ def clear_all_channels():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Order matters: comments first due to foreign key constraint
+        # Order matters: comments first due to foreign key constraint, then ratings
         cur.execute("DELETE FROM comments;")
+        cur.execute("DELETE FROM ratings;") # Usunięto tabelę comments, więc trzeba usunąć ratings
         cur.execute("DELETE FROM channels;")
         conn.commit()
         return jsonify({"message": "Wszystkie kanały i komentarze zostały usunięte."}), 200
@@ -409,7 +416,7 @@ def clear_all_channels():
 
 @app.route('/api/channels/<int:channel_id>/rate', methods=['POST'])
 def rate_channel(channel_id):
-    """Przesyła ocenę dla kanału i aktualizuje jego średnią ocenę. Limit oceniania obsługiwany jest po stronie klienta."""
+    """Przesyła ocenę dla kanału i aktualizuje jego średnią ocenę."""
     data = request.get_json()
     rating = data.get('rating')
 
@@ -422,6 +429,7 @@ def rate_channel(channel_id):
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # Get current rating and count
         cur.execute("SELECT average_rating, ratings_count FROM channels WHERE id = %s;", (channel_id,))
         result = cur.fetchone()
 
@@ -440,12 +448,7 @@ def rate_channel(channel_id):
             (new_avg_rating, new_ratings_count, channel_id)
         )
         conn.commit()
-
-        return jsonify({
-            "message": "Ocena dodana pomyślnie",
-            "new_average_rating": new_avg_rating,
-            "new_ratings_count": new_ratings_count
-        }), 200
+        return jsonify({"message": "Ocena dodana pomyślnie", "new_average_rating": new_avg_rating, "new_ratings_count": new_ratings_count}), 200
     except Exception as e:
         print(f"ERROR: Błąd podczas oceniania kanału {channel_id}: {e}")
         if conn:
@@ -462,7 +465,7 @@ def add_comment_to_channel(channel_id):
     """Dodaje komentarz do określonego kanału."""
     data = request.get_json()
     text = data.get('text')
-    author = data.get('author', 'Anonimowy')
+    author = data.get('author', 'Anonimowy użytkownik') # Default author if not provided by frontend
 
     if not text:
         return jsonify({"error": "Tekst komentarza jest wymagany."}), 400
@@ -489,34 +492,5 @@ def add_comment_to_channel(channel_id):
         if conn:
             conn.close()
 
-# --- Funkcja do kasowania WSZYSTKICH danych (tylko dla DEVELOPMENTU!) ---
-def delete_all_data_development_only():
-    """
-    USUWA WSZYSTKIE DANE Z TABEL 'channels' i 'comments'.
-    TO JEST FUNKCJA DEWELOPERSKA I NIGDY NIE POWINNA BYĆ UŻYWANA W PRODUKCJI.
-    """
-    conn = None
-    cur = None
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("DELETE FROM comments;")
-        cur.execute("DELETE FROM channels;")
-        conn.commit()
-        print("SUKCES: Wszystkie dane z tabel 'channels' i 'comments' zostały usunięte.")
-    except Exception as e:
-        print(f"BŁĄD: Nie udało się usunąć wszystkich danych: {e}")
-        if conn:
-            conn.rollback()
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-
 if __name__ == '__main__':
-    # Aby wyczyścić bazę danych podczas lokalnego uruchomienia, odkomentuj poniższą linię:
-    # WARNING: To usunie WSZYSTKIE dane! Używaj tylko w celach deweloperskich/testowych!
-    # delete_all_data_development_only()
-
     app.run(debug=True, port=5000)
