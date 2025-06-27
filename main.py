@@ -28,6 +28,9 @@ ADMIN_PASS1 = os.environ.get('ADMIN_PASS1', 'default_admin123') # Ustaw to na Re
 ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') # Ustaw to na Render.com
 ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') # Token do autoryzacji operacji
 
+# Global flag to ensure database initialization runs only once
+db_initialized = False
+
 def verify_admin_token(request_headers):
     """Weryfikuje, czy żądanie zawiera poprawny token autoryzacji administratora."""
     auth_header = request_headers.get('Authorization')
@@ -59,7 +62,7 @@ def get_db_connection():
 
 def initialize_db():
     """Inicjalizuje schemat bazy danych, jeśli tabele nie istnieją,
-    oraz aktualizuje istniejące kolumny (np. zmieniając nazwę)."""
+    oraz aktualizuje istniejące kolumny."""
     conn = None
     cur = None
     try:
@@ -84,16 +87,21 @@ def initialize_db():
         conn.commit() # Commit the table creation immediately
 
         # Spróbuj zmienić nazwę kolumny 'average_rating' na 'rating', jeśli istnieje
-        # Ta operacja musi być wykonywana w oddzielnej transakcji lub z autocommit
-        # Używamy SAVEPOINT dla bardziej granularnej kontroli w obrębie transakcji
         try:
-            cur.execute("SAVEPOINT sp1;") # Ustawienie punktu zapisu
+            # Używamy ALTER TABLE w oddzielnym bloku try-except i commitujemy go natychmiast
+            # lub wykonujemy rollback, aby nie wpłynąć na dalsze operacje
             cur.execute("""
                 ALTER TABLE channels RENAME COLUMN average_rating TO rating;
             """)
+            conn.commit() # Commit the ALTER TABLE if successful
             print("INFO: Kolumna 'average_rating' w tabeli 'channels' została pomyślnie zmieniona na 'rating'.")
         except psycopg2.ProgrammingError as e:
-            conn.rollback() # Rollback do punktu zapisu w przypadku błędu
+            # Rollback tylko dla tej operacji ALTER TABLE, jeśli była w otwartej transakcji
+            # (chociaż lepiej, aby ALTER TABLE były auto-commitowane lub w osobnym połączeniu)
+            # W przypadku ProgrammingError, która nie blokuje całej transakcji, nie zawsze jest potrzebny rollback
+            # ale dla bezpieczeństwa, zwłaszcza przy zmianach schematu.
+            if conn and not conn.autocommit: # Tylko jeśli nie jest w autocommit
+                 conn.rollback() # Rollback tylko tej operacji
             if "column \"average_rating\" does not exist" in str(e):
                 print("INFO: Kolumna 'average_rating' nie istnieje w tabeli 'channels', nie ma potrzeby zmiany nazwy.")
             elif "column \"rating\" already exists" in str(e) and "cannot rename" in str(e):
@@ -101,10 +109,13 @@ def initialize_db():
             else:
                 print(f"WARNING: Nieoczekiwany błąd podczas próby zmiany nazwy kolumny 'average_rating': {e}")
         except Exception as e:
-            conn.rollback() # Rollback całej transakcji w przypadku innego błędu
+            if conn and not conn.autocommit:
+                conn.rollback()
             print(f"WARNING: Ogólny błąd podczas operacji ALTER TABLE: {e}")
         finally:
-            conn.commit() # Zatwierdź lub zrolbackuj transakcję ALTER TABLE
+            # Po operacji ALTER TABLE, stan połączenia powinien być normalny
+            pass
+
 
         # Utwórz inne tabele (comments i ratings), jeśli nie istnieją
         cur.execute("""
@@ -136,18 +147,21 @@ def initialize_db():
             conn.close()
 
 # Inicjalizacja bazy danych przy starcie aplikacji
-# Używamy app.before_first_request aby upewnić się, że to zostanie wywołane raz
-# przed pierwszym żądaniem, ale po kontekście aplikacji.
-@app.before_first_request
-def setup_database():
-    try:
-        initialize_db()
-    except Exception as e:
-        print(f"KRYTYCZNY BŁĄD: Nie udało się zainicjalizować bazy danych przy starcie aplikacji: {e}")
-        # W zależności od wymaganej odporności, tutaj można by zakończyć aplikację
-        # lub pozwolić jej działać z ograniczeniami, ale z wyraźnym logowaniem.
-        # Na Renderze, niepowodzenie połączenia z bazą danych na starcie często
-        # oznacza, że aplikacja nie będzie działać poprawnie.
+# Używamy app.before_request wraz z flagą, aby upewnić się, że to zostanie wywołane raz
+@app.before_request
+def setup_database_once():
+    global db_initialized
+    if not db_initialized:
+        try:
+            initialize_db()
+            db_initialized = True
+        except Exception as e:
+            print(f"KRYTYCZNY BŁĄD: Nie udało się zainicjalizować bazy danych przy starcie aplikacji: {e}")
+            # Na Renderze, niepowodzenie połączenia z bazą danych na starcie często
+            # oznacza, że aplikacja nie będzie działać poprawnie.
+            # Tutaj możesz zdecydować, czy chcesz zwrócić błąd HTTP, aby uniemożliwić dalsze działanie.
+            # np. abort(500)
+            pass
 
 
 def is_valid_whatsapp_channel_link(link):
