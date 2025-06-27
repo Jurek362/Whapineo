@@ -81,27 +81,22 @@ def initialize_db():
                 rating REAL DEFAULT 0.0, -- Zmieniono z 'average_rating' na 'rating'
                 ratings_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_boosted TIMESTAMP DEFAULT NULL
+                last_boosted TIMESTAMP DEFAULT NULL,
+                is_partner BOOLEAN DEFAULT FALSE -- NOWA KOLUMNA: czy kanał jest partnerem
             );
         """)
         conn.commit() # Commit the table creation immediately
 
         # Spróbuj zmienić nazwę kolumny 'average_rating' na 'rating', jeśli istnieje
         try:
-            # Używamy ALTER TABLE w oddzielnym bloku try-except i commitujemy go natychmiast
-            # lub wykonujemy rollback, aby nie wpłynąć na dalsze operacje
             cur.execute("""
                 ALTER TABLE channels RENAME COLUMN average_rating TO rating;
             """)
-            conn.commit() # Commit the ALTER TABLE if successful
+            conn.commit()
             print("INFO: Kolumna 'average_rating' w tabeli 'channels' została pomyślnie zmieniona na 'rating'.")
         except psycopg2.ProgrammingError as e:
-            # Rollback tylko dla tej operacji ALTER TABLE, jeśli była w otwartej transakcji
-            # (chociaż lepiej, aby ALTER TABLE były auto-commitowane lub w osobnym połączeniu)
-            # W przypadku ProgrammingError, która nie blokuje całej transakcji, nie zawsze jest potrzebny rollback
-            # ale dla bezpieczeństwa, zwłaszcza przy zmianach schematu.
-            if conn and not conn.autocommit: # Tylko jeśli nie jest w autocommit
-                 conn.rollback() # Rollback tylko tej operacji
+            if conn and not conn.autocommit:
+                 conn.rollback()
             if "column \"average_rating\" does not exist" in str(e):
                 print("INFO: Kolumna 'average_rating' nie istnieje w tabeli 'channels', nie ma potrzeby zmiany nazwy.")
             elif "column \"rating\" already exists" in str(e) and "cannot rename" in str(e):
@@ -113,7 +108,20 @@ def initialize_db():
                 conn.rollback()
             print(f"WARNING: Ogólny błąd podczas operacji ALTER TABLE: {e}")
         finally:
-            # Po operacji ALTER TABLE, stan połączenia powinien być normalny
+            pass
+
+        # Dodaj kolumnę is_partner, jeśli nie istnieje
+        try:
+            cur.execute("""
+                ALTER TABLE channels ADD COLUMN IF NOT EXISTS is_partner BOOLEAN DEFAULT FALSE;
+            """)
+            conn.commit()
+            print("INFO: Kolumna 'is_partner' w tabeli 'channels' została sprawdzona/dodana pomyślnie.")
+        except Exception as e:
+            if conn and not conn.autocommit:
+                conn.rollback()
+            print(f"WARNING: Błąd podczas dodawania kolumny 'is_partner': {e}")
+        finally:
             pass
 
 
@@ -157,10 +165,6 @@ def setup_database_once():
             db_initialized = True
         except Exception as e:
             print(f"KRYTYCZNY BŁĄD: Nie udało się zainicjalizować bazy danych przy starcie aplikacji: {e}")
-            # Na Renderze, niepowodzenie połączenia z bazą danych na starcie często
-            # oznacza, że aplikacja nie będzie działać poprawnie.
-            # Tutaj możesz zdecydować, czy chcesz zwrócić błąd HTTP, aby uniemożliwić dalsze działanie.
-            # np. abort(500)
             pass
 
 
@@ -287,15 +291,15 @@ def index():
 
 @app.route('/api/channels', methods=['GET'])
 def get_channels():
-    """Pobiera wszystkie kanały z bazy danych, sortując je według ostatniego boostowania."""
+    """Pobiera wszystkie kanały z bazy danych, sortując je według ostatniego boostowania,
+    z wykluczeniem kanałów partnerskich."""
     conn = None
     cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        # Sortowanie: najpierw kanały z ostatnim boostem, potem według daty utworzenia
-        # Używamy kolumny 'rating'
-        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url FROM channels ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
+        # Pobierz tylko kanały, które NIE są partnerami
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url FROM channels WHERE is_partner = FALSE ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
@@ -329,6 +333,51 @@ def get_channels():
             cur.close()
         if conn:
             conn.close()
+
+@app.route('/api/partner_channels', methods=['GET'])
+def get_partner_channels():
+    """Pobiera tylko kanały partnerskie z bazy danych."""
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Pobierz tylko kanały, które SĄ partnerami
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url FROM channels WHERE is_partner = TRUE ORDER BY created_at DESC;")
+        channels_data = cur.fetchall()
+
+        partner_channels_list = []
+        for channel in channels_data:
+            channel_id = channel[0]
+            cur.execute("SELECT author, text, created_at FROM comments WHERE channel_id = %s ORDER BY created_at DESC;", (channel_id,))
+            comments_data = cur.fetchall()
+            comments_list = [{
+                'author': c[0],
+                'text': c[1],
+                'date': c[2].isoformat().split('T')[0]
+            } for c in comments_data]
+
+            partner_channels_list.append({
+                'id': channel_id,
+                'name': channel[1],
+                'description': channel[2],
+                'link': channel[3],
+                'rating': channel[4] if channel[4] is not None else 0.0,
+                'ratingsCount': channel[5] if channel[5] is not None else 0,
+                'followerCount': channel[6] if channel[6] is not None else 0,
+                'profileImageUrl': channel[7],
+                'comments': comments_list
+            })
+        return jsonify(partner_channels_list)
+    except Exception as e:
+        print(f"ERROR: Błąd podczas pobierania kanałów partnerskich: {e}")
+        return jsonify({"error": "Błąd podczas ładowania kanałów partnerskich"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 
 @app.route('/api/channels', methods=['POST'])
 def add_channel():
@@ -592,7 +641,7 @@ def boost_channel(channel_id):
 @app.route('/api/channels/<int:channel_id>/unboost', methods=['POST'])
 def unboost_channel(channel_id):
     """
-    Sets the last_boosted timestamp to a very old date to push the channel to the bottom.
+    Ustawia znacznik czasu 'last_boosted' na bardzo starą datę, aby przesunąć kanał na dół listy.
     """
     conn = None
     cur = None
@@ -625,6 +674,56 @@ def unboost_channel(channel_id):
             cur.close()
         if conn:
             conn.close()
+
+@app.route('/api/channels/<int:channel_id>/toggle_partner', methods=['POST'])
+def toggle_partner_status(channel_id):
+    """
+    Przełącza status 'is_partner' dla danego kanału (tylko dla administratora).
+    """
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        # Pobierz aktualny status is_partner
+        cur.execute("SELECT is_partner FROM channels WHERE id = %s;", (channel_id,))
+        result = cur.fetchone()
+
+        if not result:
+            return jsonify({"error": "Kanał nie znaleziony."}), 404
+
+        current_is_partner = result[0]
+        new_is_partner = not current_is_partner # Przełącz status
+
+        cur.execute(
+            "UPDATE channels SET is_partner = %s WHERE id = %s RETURNING name, is_partner;",
+            (new_is_partner, channel_id)
+        )
+        updated_channel_info = cur.fetchone()
+        conn.commit()
+
+        if updated_channel_info:
+            return jsonify({
+                "message": f"Status partnera dla kanału '{updated_channel_info[0]}' zmieniony na {updated_channel_info[1]}.",
+                "is_partner": updated_channel_info[1]
+            }), 200
+        else:
+            return jsonify({"error": "Kanał nie znaleziony."}), 404
+    except Exception as e:
+        print(f"ERROR: Błąd podczas przełączania statusu partnera dla kanału {channel_id}: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Błąd podczas przełączania statusu partnera."}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
