@@ -18,46 +18,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Whapineo - Oceny Kanałów WhatsApp</title>
-    <link rel="icon" type="image/png" href="logo.png">
-    <meta property="og:title" content="Whapineo - Oceny Kanałów WhatsApp">
+    <link rel="icon" type="image/png" href="logo.png"> <meta property="og:title" content="Whapineo - Oceny Kanałów WhatsApp">
     <meta property="og:description" content="Odkryj i oceniaj najlepsze kanały WhatsApp. Znajdź interesujące społeczności i dziel się opiniami!">
-    <meta property="og:image" content="https://i.postimg.cc/jSMcy1KV/file-00000000f2446246beb40b4c7e938a1b-1.png">
-    <meta property="og:url" content="YOUR_WEBSITE_URL_HERE">
-    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://i.postimg.cc/jSMcy1KV/file-00000000f2446246beb40b4c7e938a1b-1.png"> <meta property="og:url" content="YOUR_WEBSITE_URL_HERE"> <meta property="og:type" content="website">
 
     <style>
-        /* CSS Variables for easier theme management */
-        :root {
-            --primary-bg-gradient: linear-gradient(135deg, #0f0f23 0%, #1a4d3a 50%, #2d5a2d 100%);
-            --header-bg-color: rgba(255, 255, 255, 0.1);
-            --header-text-color: white;
-            --card-bg-color: white;
-            --text-color-dark: #333;
-            --text-color-medium: #666;
-            --text-color-light: #777;
-            --border-color-light: #e0e0e0;
-            --accent-color-primary: #2d5a2d;
-            --accent-color-secondary: #1a4d3a;
-            --success-gradient: linear-gradient(45deg, #56ab2f, #a8e6cf);
-            --error-gradient: linear-gradient(45deg, #ff416c, #ff4b2b);
-            --star-color-active: #ffd700;
-            --star-color-inactive: #ddd;
-            --disabled-color: #ccc;
-            --soft-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            --medium-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            --strong-shadow: 0 15px 40px rgba(0,0,0,0.15);
-            --border-radius-small: 8px;
-            --border-radius-medium: 10px;
-            --border-radius-large: 15px;
-            --border-radius-xl: 20px;
-            --spacing-xs: 5px;
-            --spacing-sm: 10px;
-            --spacing-md: 15px;
-            --spacing-lg: 20px;
-            --spacing-xl: 30px;
-            --spacing-xxl: 40px;
-        }
-
         /* General styles */
         * {
             margin: 0;
@@ -67,114 +32,159 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--primary-bg-gradient);
+            background: linear-gradient(135deg, #0f0f23 0%, #1a4d3a 50%, #2d5a2d 100%);
             min-height: 100vh;
-            color: var(--text-color-dark);
-            display: flex;
-            flex-direction: column;
-            line-height: 1.6; /* Improved readability */
+            color: #333;
+            display: flex; /* Użyj flexbox, aby stopka była na dole */
+            flex-direction: column; /* Ułóż zawartość w kolumnie */
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: var(--spacing-lg);
-            flex: 1;
+            padding: 20px;
+            flex: 1; /* Pozwól kontenerowi rozciągać się, wypychając stopkę w dół */
         }
 
         /* Header */
         .header {
             text-align: center;
-            margin-bottom: var(--spacing-lg);
-            background: var(--header-bg-color);
+            margin-bottom: 20px; /* Zmniejszony margines dla miejsca na instrukcje */
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            padding: var(--spacing-xl);
-            border-radius: var(--border-radius-xl);
+            padding: 30px;
+            border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            position: relative;
-            box-shadow: var(--medium-shadow); /* Added shadow for header */
+            position: relative; /* Potrzebne do pozycjonowania przycisku */
         }
 
         .header h1 {
             font-size: 3em;
-            color: var(--header-text-color);
-            margin-bottom: var(--spacing-sm);
+            color: white;
+            margin-bottom: 10px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            font-weight: bold; /* Ensure it's bold */
         }
 
         .header p {
             color: rgba(255, 255, 255, 0.9);
             font-size: 1.2em;
-            margin-bottom: var(--spacing-lg);
+            margin-bottom: 20px; /* Dodany margines pod opisem */
         }
 
+        /* Logo styling for header */
         .header .logo {
-            max-width: 150px;
+            max-width: 150px; /* Adjust as needed */
             height: auto;
-            margin-bottom: var(--spacing-lg);
-            display: block;
+            margin-bottom: 20px; /* Space between logo and title */
+            display: block; /* Ensure it takes its own line */
             margin-left: auto;
             margin-right: auto;
-            border-radius: var(--border-radius-large);
-            box-shadow: var(--soft-shadow); /* Shadow for logo */
+            border-radius: 15px; /* Zaokrąglone rogi logo */
         }
+
+        /* Partner Channels Section */
+        #partnerChannelsSection {
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            display: none; /* Ukryte domyślnie, pokażemy tylko jeśli są kanały partnerskie */
+        }
+
+        #partnerChannelsSection.show {
+            display: block;
+        }
+
+        #partnerChannelsSection h2 {
+            font-size: 2em;
+            color: #1a4d3a;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .partner-channels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .partner-channel-card {
+            background: linear-gradient(45deg, #f0f8ff, #e0e0f0); /* Jasny gradient dla partnerów */
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            border: 2px solid #2d5a2d; /* Wyraźna ramka */
+            display: flex;
+            flex-direction: column;
+            min-height: 250px;
+        }
+
+        .partner-channel-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            border-color: #1a4d3a;
+        }
+
 
         /* Search & Sort Section */
         .controls-section {
             display: flex;
             flex-direction: column;
-            gap: var(--spacing-lg);
-            background: var(--card-bg-color);
-            padding: var(--spacing-xl);
-            border-radius: var(--border-radius-large);
-            box-shadow: var(--medium-shadow);
-            margin-bottom: var(--spacing-xl);
+            gap: 20px;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
         }
 
         .search-box {
             display: flex;
-            gap: var(--spacing-md);
+            gap: 15px;
             align-items: center;
-            justify-content: center;
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
+            justify-content: center; /* Centering the search box */
+            width: 100%; /* Ensure it takes full width of its parent */
+            max-width: 600px; /* Limit width for better appearance */
+            margin: 0 auto; /* Center the search box itself */
         }
 
         .search-input {
             flex: 1;
-            padding: var(--spacing-md);
-            border: 2px solid var(--border-color-light);
-            border-radius: var(--border-radius-medium);
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s ease;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Subtle inner shadow */
         }
 
         .search-input:focus {
             outline: none;
-            border-color: var(--accent-color-primary);
-            box-shadow: 0 0 10px rgba(45, 90, 45, 0.3), inset 0 1px 3px rgba(0,0,0,0.05);
+            border-color: #2d5a2d;
+            box-shadow: 0 0 10px rgba(45, 90, 45, 0.3);
         }
 
         .sort-section {
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
+            gap: 10px;
             justify-content: center;
-            margin-top: var(--spacing-md);
+            margin-top: 15px; /* Spacing between search and sort */
         }
 
         .sort-section label {
             font-weight: bold;
-            color: var(--text-color-dark);
+            color: #333;
         }
 
         .sort-select {
-            padding: var(--spacing-sm) var(--spacing-md);
-            border: 2px solid var(--border-color-light);
-            border-radius: var(--border-radius-medium);
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
             font-size: 16px;
             background-color: #f9f9f9;
             cursor: pointer;
@@ -183,50 +193,46 @@
 
         .sort-select:focus {
             outline: none;
-            border-color: var(--accent-color-primary);
+            border-color: #2d5a2d;
             box-shadow: 0 0 8px rgba(45, 90, 45, 0.3);
         }
 
         /* Buttons */
         .btn {
-            padding: var(--spacing-md) var(--spacing-xl);
+            padding: 15px 30px;
             border: none;
-            border-radius: var(--border-radius-medium);
+            border-radius: 10px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            position: relative; /* For pseudo-elements or more complex effects */
-            overflow: hidden; /* Hide overflow for hover effects */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Dodany cień do przycisków */
         }
 
         .btn-primary {
-            background: linear-gradient(45deg, var(--accent-color-secondary), var(--accent-color-primary));
-            color: var(--header-text-color);
+            background: linear-gradient(45deg, #1a4d3a, #2d5a2d);
+            color: white;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(26, 77, 58, 0.4);
-            filter: brightness(1.1); /* Subtle brightness increase on hover */
         }
 
         .btn-success {
-            background: var(--success-gradient);
-            color: var(--header-text-color);
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            color: white;
         }
 
         .btn-success:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
-            filter: brightness(1.1);
         }
         
-        .btn.disabled {
-            background: var(--disabled-color);
+        .btn.disabled { /* Style for disabled buttons */
+            background: #ccc;
             cursor: not-allowed;
             opacity: 0.7;
             box-shadow: none;
@@ -236,18 +242,16 @@
         /* Instruction button in header */
         .header .btn-toggle-instructions {
             background: rgba(255, 255, 255, 0.2);
-            color: var(--header-text-color);
-            padding: var(--spacing-sm) var(--spacing-lg);
+            color: white;
+            padding: 10px 20px;
             font-size: 1em;
-            margin-top: var(--spacing-md);
+            margin-top: 15px;
             border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Smaller shadow */
         }
 
         .header .btn-toggle-instructions:hover {
             background: rgba(255, 255, 255, 0.3);
             box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
-            transform: translateY(-1px); /* Slight lift */
         }
 
 
@@ -255,139 +259,114 @@
         .channels-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: var(--spacing-lg);
-            margin-bottom: var(--spacing-xl);
+            gap: 25px;
+            margin-bottom: 30px;
         }
 
         .channel-card {
-            background: var(--card-bg-color);
-            border-radius: var(--border-radius-large);
-            padding: var(--spacing-lg);
-            box-shadow: var(--soft-shadow);
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.8);
             display: flex;
             flex-direction: column;
             height: auto; 
-            min-height: 250px;
-            position: relative; /* For potential absolute positioning of boost/unboost buttons */
+            min-height: 250px; /* Minimum height for consistency */
         }
 
         .channel-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--strong-shadow);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
         }
 
         .channel-header {
             display: flex;
             align-items: center;
-            margin-bottom: var(--spacing-md);
-            /* Removed flex-end for better control of button stacking */
-            /* Using space-between to push channel-info left and buttons right */
-            justify-content: space-between;
+            margin-bottom: 15px;
         }
 
         .channel-avatar {
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: linear-gradient(45deg, var(--accent-color-secondary), var(--accent-color-primary));
+            background: linear-gradient(45deg, #1a4d3a, #2d5a2d);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--header-text-color);
+            color: white;
             font-weight: bold;
             font-size: 18px;
-            margin-right: var(--spacing-md);
+            margin-right: 15px;
             flex-shrink: 0;
-            overflow: hidden;
-            box-shadow: var(--soft-shadow); /* Shadow for avatar */
-            border: 2px solid rgba(255,255,255,0.7); /* Light border */
+            overflow: hidden; /* Ensure image fits */
         }
 
         .channel-avatar img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-        }
-
-        .channel-info {
-            flex-grow: 1; /* Allows it to take available space */
-            margin-right: var(--spacing-md); /* Add some space between info and buttons */
+            object-fit: cover; /* Cover the avatar area */
         }
 
         .channel-info h3 {
-            font-size: 1.4em; /* Slightly larger */
-            margin-bottom: var(--spacing-xs);
-            color: var(--text-color-dark);
-            word-break: break-word;
-            font-weight: 700; /* Bolder */
+            font-size: 1.3em;
+            margin-bottom: 5px;
+            color: #333;
+            word-break: break-word; /* Włączone zawijanie słów dla nagłówków */
         }
 
         .channel-info p { /* For follower count */
-            font-size: 0.95em; /* Slightly larger */
-            color: var(--text-color-light);
-            margin-top: var(--spacing-xs);
-        }
-
-        /* New container for Boost/Unboost buttons */
-        .channel-actions {
-            display: flex;
-            flex-direction: column; /* Stack buttons vertically */
-            gap: var(--spacing-sm); /* Space between buttons */
-            flex-shrink: 0; /* Prevent shrinking */
-            align-items: flex-end; /* Align buttons to the right */
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 5px;
         }
 
         /* Collapsible content */
         .collapsible-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.7s ease-in-out, opacity 0.7s ease-in-out, padding 0.7s ease-in-out;
+            transition: max-height 0.7s ease-in-out, opacity 0.7s ease-in-out;
             opacity: 0;
-            padding-top: 0;
-            box-sizing: border-box; /* Include padding in max-height calculation */
+            padding-top: 0; /* Ensures no padding when collapsed */
         }
 
         .collapsible-content.show {
-            max-height: 1000px;
+            max-height: 1000px; /* Arbitrarily large value to allow content to show */
             opacity: 1;
-            padding-top: var(--spacing-md);
+            padding-top: 15px; /* Adds space above when shown */
         }
 
         /* Rating Section */
         .rating-section {
-            margin-bottom: var(--spacing-lg);
-            padding-top: var(--spacing-md);
-            border-top: 1px solid var(--border-color-light);
-            margin-top: var(--spacing-md);
+            margin-bottom: 20px;
+            padding-top: 15px; /* Added padding to separate from header */
+            border-top: 1px solid #eee; /* Separator line */
+            margin-top: 15px; /* Added margin to separate from header */
         }
 
         .stars {
             display: flex;
-            gap: var(--spacing-xs);
-            margin-bottom: var(--spacing-sm);
+            gap: 5px;
+            margin-bottom: 10px;
         }
 
         .star {
-            font-size: 26px; /* Slightly larger stars */
-            color: var(--star-color-inactive);
+            font-size: 24px;
+            color: #ddd;
             cursor: pointer;
-            transition: all 0.2s ease, color 0.2s ease; /* Added color transition */
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Subtle shadow for stars */
+            transition: all 0.2s ease;
         }
 
         .star.active, .star:hover {
-            color: var(--star-color-active);
+            color: #ffd700;
             transform: scale(1.1);
         }
         
-        .stars.disabled .star {
-            color: var(--star-color-inactive); /* Keep base color */
+        .stars.disabled .star { /* Style for disabled buttons */
+            background: transparent; /* Changed to transparent so stars remain visible */
             cursor: not-allowed;
             opacity: 0.7;
-            transform: none; /* No scaling for disabled stars */
-            pointer-events: none; /* Prevent any pointer events */
         }
 
         .rating-info {
@@ -395,56 +374,51 @@
             justify-content: space-between;
             align-items: center;
             font-size: 14px;
-            color: var(--text-color-medium);
+            color: #666;
         }
 
         /* Comments Section */
         .comments-section {
-            margin-top: var(--spacing-lg);
-            padding-top: var(--spacing-md);
-            border-top: 1px solid var(--border-color-light);
+            margin-top: 20px;
+            padding-top: 15px; /* Added padding to separate from rating section */
+            border-top: 1px solid #eee; /* Separator line */
         }
 
         .comment-form {
-            margin-bottom: var(--spacing-lg);
+            margin-bottom: 20px;
         }
 
         .comment-textarea {
             width: 100%;
-            padding: var(--spacing-md);
-            border: 2px solid var(--border-color-light);
-            border-radius: var(--border-radius-medium);
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
             font-size: 14px;
             resize: vertical;
             min-height: 100px;
             font-family: inherit;
-            transition: all 0.3s ease;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .comment-textarea:focus {
             outline: none;
-            border-color: var(--accent-color-primary);
-            box-shadow: 0 0 8px rgba(45, 90, 45, 0.3), inset 0 1px 3px rgba(0,0,0,0.05);
+            border-color: #2d5a2d;
         }
 
         .comments-list {
             max-height: 300px;
             overflow-y: auto;
-            border: 1px solid var(--border-color-light);
-            border-radius: var(--border-radius-small);
-            padding: var(--spacing-sm);
-            background-color: #fcfcfc; /* Slightly lighter background */
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
         }
 
         .comment {
             background: #f8f9fa;
-            padding: var(--spacing-md);
-            border-radius: var(--border-radius-medium);
-            margin-bottom: var(--spacing-sm);
-            border-left: 4px solid var(--accent-color-primary);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2d5a2d;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            animation: fadeIn 0.5s ease-out; /* Fade in new comments */
         }
 
         .comment:last-child {
@@ -453,8 +427,8 @@
 
         .comment-author {
             font-weight: bold;
-            color: var(--accent-color-secondary);
-            margin-bottom: var(--spacing-xs);
+            color: #1a4d3a;
+            margin-bottom: 5px;
             display: inline-block;
         }
 
@@ -466,55 +440,54 @@
 
         /* Add Channel Section */
         .add-channel-section {
-            background: var(--card-bg-color);
-            padding: var(--spacing-xl);
-            border-radius: var(--border-radius-large);
-            box-shadow: var(--medium-shadow);
-            margin-bottom: var(--spacing-xl);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
         }
 
         .form-group {
-            margin-bottom: var(--spacing-lg);
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: var(--spacing-xs);
+            margin-bottom: 8px;
             font-weight: bold;
-            color: var(--text-color-dark);
+            color: #333;
         }
 
         .form-input {
             width: 100%;
-            padding: var(--spacing-md);
-            border: 2px solid var(--border-color-light);
-            border-radius: var(--border-radius-medium);
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
             font-size: 16px;
             transition: all 0.3s ease;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .form-input:focus {
             outline: none;
-            border-color: var(--accent-color-primary);
-            box-shadow: 0 0 10px rgba(45, 90, 45, 0.3), inset 0 1px 3px rgba(0,0,0,0.05);
+            border-color: #2d5a2d;
+            box-shadow: 0 0 10px rgba(45, 90, 45, 0.3);
         }
 
         /* Loading Spinner */
         .loading {
             text-align: center;
-            padding: var(--spacing-xxl);
-            color: var(--text-color-medium);
+            padding: 20px;
+            color: #666;
         }
 
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--accent-color-primary);
+            border-top: 4px solid #2d5a2d;
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto var(--spacing-lg);
+            margin: 0 auto 20px;
         }
 
         @keyframes spin {
@@ -522,98 +495,86 @@
             100% { transform: rotate(360deg); }
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         /* Notification */
         .notification {
             position: fixed;
-            top: var(--spacing-lg);
-            right: var(--spacing-lg);
-            padding: var(--spacing-md) var(--spacing-lg);
-            border-radius: var(--border-radius-medium);
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
             color: white;
             font-weight: bold;
             z-index: 1000;
-            transform: translateX(calc(100% + var(--spacing-lg))); /* Start off-screen */
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-out;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            opacity: 0;
-            min-width: 250px;
-            text-align: center;
         }
 
         .notification.show {
             transform: translateX(0);
-            opacity: 1;
         }
 
         .notification.success {
-            background: var(--success-gradient);
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
         }
 
         .notification.error {
-            background: var(--error-gradient);
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
         }
 
         /* Instruction Section Styling */
         .instructions-section {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(5px);
-            padding: var(--spacing-xl);
-            border-radius: var(--border-radius-large);
-            box-shadow: var(--medium-shadow);
-            margin-bottom: var(--spacing-xl);
-            color: var(--text-color-dark);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+            color: #333;
             overflow: hidden;
-            max-height: 0;
-            opacity: 0;
+            max-height: 0; /* Domyślnie ukryte */
+            opacity: 0; /* Domyślnie niewidoczne dla płynnego przejścia */
             transition: max-height 0.7s ease-in-out, opacity 0.7s ease-in-out, padding 0.7s ease-in-out;
             border: 1px solid rgba(255, 255, 255, 0.8);
-            box-sizing: border-box; /* Crucial for max-height transition */
         }
 
         .instructions-section.show {
             max-height: 500px; /* Adjust based on content height */
             opacity: 1;
-            padding: var(--spacing-xl);
+            padding: 25px; /* Ensure padding is applied when shown */
         }
 
         .instructions-section h2 {
             font-size: 1.8em;
-            color: var(--accent-color-secondary);
-            margin-bottom: var(--spacing-md);
+            color: #1a4d3a;
+            margin-bottom: 15px;
             text-align: center;
-            font-weight: 600;
         }
 
         .instructions-section ul {
             list-style-type: disc;
-            margin-left: var(--spacing-xl);
-            margin-bottom: var(--spacing-md);
-            text-align: left;
-            max-width: 600px;
+            margin-left: 25px;
+            margin-bottom: 15px;
+            text-align: left; /* Wyrównanie listy do lewej */
+            max-width: 600px; /* Ograniczenie szerokości listy */
             margin-left: auto;
             margin-right: auto;
-            padding-left: 0; /* Remove default padding for centered list items */
         }
 
         .instructions-section li {
-            margin-bottom: var(--spacing-xs);
+            margin-bottom: 8px;
             line-height: 1.6;
         }
 
         .instructions-section p {
-            margin-bottom: var(--spacing-sm);
-            text-align: left;
-            max-width: 600px;
+            margin-bottom: 10px;
+            text-align: left; /* Wyrównanie akapitu do lewej */
+            max-width: 600px; /* Ograniczenie szerokości akapitu */
             margin-left: auto;
             margin-right: auto;
         }
         .instructions-section strong {
-            color: var(--accent-color-secondary);
+            color: #1a4d3a; /* Pogrubiony tekst w instrukcjach */
         }
 
 
@@ -638,44 +599,37 @@
 
             .btn {
                 width: 100%;
-                margin-top: var(--spacing-sm);
-                padding: var(--spacing-md) var(--spacing-lg); /* Adjust padding for mobile buttons */
-                font-size: 15px; /* Slightly smaller font */
+                margin-top: 10px;
             }
 
-            .channels-grid {
+            .channels-grid, .partner-channels-grid { /* Apply to both grids */
                 grid-template-columns: 1fr;
             }
 
-            .channel-card {
-                padding: var(--spacing-lg);
-                min-height: auto; /* Allow height to adjust naturally on mobile */
+            .channel-card, .partner-channel-card { /* Apply to both card types */
+                padding: 20px;
             }
 
             .channel-avatar {
-                width: 45px; /* Slightly smaller avatar */
-                height: 45px;
+                width: 40px;
+                height: 40px;
                 font-size: 16px;
             }
 
             .channel-info h3 {
-                font-size: 1.2em; /* Adjusted font size */
-            }
-
-            .channel-info p {
-                font-size: 0.9em;
+                font-size: 1.1em;
             }
 
             .form-input, .comment-textarea {
-                padding: var(--spacing-sm);
+                padding: 12px;
                 font-size: 14px;
             }
 
             .instructions-section {
-                padding: var(--spacing-md);
+                padding: 15px;
             }
             .instructions-section.show {
-                max-height: 700px;
+                max-height: 700px; /* Adjust for mobile if needed */
             }
 
             .controls-section {
@@ -685,76 +639,49 @@
             .sort-section {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: var(--spacing-sm);
-            }
-
-            .sort-select {
-                width: 100%; /* Full width for select on mobile */
-            }
-
-            /* Boost/Unboost buttons on mobile */
-            .channel-actions { /* Adjust channel-actions for mobile */
-                flex-direction: column;
-                gap: var(--spacing-xs); /* Smaller gap for mobile */
-                align-items: stretch; /* Stretch buttons to full width */
-                width: 100%; /* Take full width of parent */
-                margin-top: var(--spacing-md); /* Add margin to separate from info */
-            }
-
-            .channel-actions .btn-boost, .channel-actions .btn-unboost {
-                margin-left: 0; /* Remove left margin */
-                margin-top: 0; /* Remove top margin from individual buttons */
-                width: 100%; /* Make buttons full width within their container */
-                font-size: 0.9em; /* Slightly larger font than previous mobile adjust */
-                padding: 8px 15px; /* Adjust padding for better touch targets */
-            }
-
-            .channel-header {
-                flex-wrap: wrap; /* Allow wrapping on small screens */
-                align-items: flex-start; /* Align items to the start when wrapped */
             }
         }
 
         /* Footer styles */
         .footer {
             text-align: center;
-            padding: var(--spacing-lg);
-            margin-top: var(--spacing-xxl);
-            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            margin-top: 40px; /* Odstęp od ostatniej sekcji */
+            background: rgba(0, 0, 0, 0.2); /* Lekko ciemniejsze tło dla stopki */
             color: rgba(255, 255, 255, 0.7);
             font-size: 0.9em;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .footer p {
-            margin: var(--spacing-xs) 0;
+            margin: 5px 0;
         }
 
         .footer strong {
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.9); /* Nieco jaśniejszy kolor dla pogrubionego tekstu */
         }
 
         /* Style for the "Show More/Less" link */
         .btn-toggle-content {
             background: none;
             border: none;
-            color: #007bff;
-            padding: var(--spacing-xs) 0;
+            color: #007bff; /* Blue color for the link */
+            padding: 5px 0;
             font-size: 1em;
             text-align: left;
-            margin-top: var(--spacing-sm);
-            text-decoration: underline;
+            margin-top: 10px;
+            text-decoration: underline; /* Underline to indicate it's a link */
             transition: color 0.3s ease;
-            box-shadow: none;
-            text-transform: none;
-            letter-spacing: normal;
+            box-shadow: none; /* Remove shadow */
+            text-transform: none; /* Remove uppercase */
+            letter-spacing: normal; /* Reset letter spacing */
         }
 
         .btn-toggle-content:hover {
-            color: #0056b3;
-            text-decoration: none;
-            transform: none;
-            box-shadow: none;
+            color: #0056b3; /* Darker blue on hover */
+            text-decoration: none; /* Remove underline on hover */
+            transform: none; /* Remove transform on hover */
+            box-shadow: none; /* Ensure no shadow on hover */
         }
 
         /* Pagination styles */
@@ -762,36 +689,34 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: var(--spacing-sm);
-            margin-top: var(--spacing-lg);
-            padding: var(--spacing-md);
-            background: var(--card-bg-color);
-            border-radius: var(--border-radius-large);
-            box-shadow: var(--soft-shadow);
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .pagination button {
-            padding: var(--spacing-xs) var(--spacing-md);
+            padding: 8px 15px;
             border: 1px solid #ddd;
-            border-radius: var(--border-radius-small);
+            border-radius: 8px;
             background-color: #f9f9f9;
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 1em;
-            color: var(--text-color-dark);
+            color: #333;
         }
 
         .pagination button:hover:not(.active):not(:disabled) {
             background-color: #e0e0e0;
             border-color: #c0c0c0;
-            transform: translateY(-1px); /* Slight lift on hover */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .pagination button.active {
-            background-color: var(--accent-color-secondary);
+            background-color: #1a4d3a;
             color: white;
-            border-color: var(--accent-color-secondary);
+            border-color: #1a4d3a;
             font-weight: bold;
         }
 
@@ -802,28 +727,26 @@
 
         /* Boost button style */
         .btn-boost {
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            color: var(--text-color-dark);
+            background: linear-gradient(45deg, #FFD700, #FFA500); /* Gold/Orange gradient */
+            color: #333;
             font-weight: bold;
-            padding: var(--spacing-xs) var(--spacing-md);
-            border-radius: var(--border-radius-small);
+            padding: 8px 15px;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            /* margin-left: var(--spacing-sm); Removed for stacking */
-            /* margin-top: var(--spacing-xs); Removed, handled by gap */
-            flex-shrink: 0; /* Prevent shrinking */
+            margin-left: 10px; /* Space from other elements */
+            margin-top: 5px;
         }
 
         .btn-boost:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            filter: brightness(1.1);
         }
 
         .btn-boost:disabled {
-            background: var(--disabled-color);
+            background: #ccc;
             cursor: not-allowed;
             opacity: 0.7;
             box-shadow: none;
@@ -832,28 +755,26 @@
 
         /* Unboost button style */
         .btn-unboost {
-            background: linear-gradient(45deg, #a7a7a7, #6b6b6b);
+            background: linear-gradient(45deg, #a7a7a7, #6b6b6b); /* Grey gradient */
             color: white;
             font-weight: bold;
-            padding: var(--spacing-xs) var(--spacing-md);
-            border-radius: var(--border-radius-small);
+            padding: 8px 15px;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            /* margin-left: var(--spacing-sm); Removed for stacking */
-            /* margin-top: var(--spacing-xs); Removed, handled by gap */
-            flex-shrink: 0; /* Prevent shrinking */
+            margin-left: 10px;
+            margin-top: 5px;
         }
 
         .btn-unboost:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            filter: brightness(1.1);
         }
 
         .btn-unboost:disabled {
-            background: var(--disabled-color);
+            background: #ccc;
             cursor: not-allowed;
             opacity: 0.7;
             box-shadow: none;
@@ -883,6 +804,17 @@
                 <li><strong>Unboostuj kanały:</strong> Kliknij przycisk "Unboostuj", aby przenieść kanał na sam dół listy. Ta akcja również ma cooldown.</li>
             </ul>
             <p>Mamy nadzieję, że Whapineo pomoże Ci znaleźć wspaniałe społeczności!</p>
+        </div>
+
+        <!-- NEW: Partner Channels Section -->
+        <div id="partnerChannelsSection">
+            <h2>Kanały Partnerskie ✨</h2>
+            <div id="partnerChannelsGrid" class="partner-channels-grid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ładowanie kanałów partnerskich...</p>
+                </div>
+            </div>
         </div>
 
         <div class="controls-section">
@@ -1078,9 +1010,7 @@
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
-            // Remove previous type classes and add the new one
-            notification.classList.remove('success', 'error');
-            notification.classList.add(type);
+            notification.className = `notification ${type}`; // Reset classes and add new type
             notification.classList.add('show'); // Show the notification
 
             // Automatically hide the notification after 3 seconds
@@ -1102,13 +1032,14 @@
             `; // Show loading spinner
 
             try {
+                // Fetch non-partner channels
                 const response = await fetch(`${API_BASE_URL}/api/channels`);
                 if (response.ok) {
                     channels = await response.json();
                     applyFiltersAndSorting(); // Apply initial filter and sort
                     // Set the default sort option in the UI (but backend already handles primary sort)
                     document.getElementById('sortSelect').value = 'default'; 
-                    // No need to call sortChannels() here as applyFiltersAndSorting() does it
+                    sortChannels(); // Apply initial sort
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas ładowania kanałów', 'error');
@@ -1122,50 +1053,77 @@
         }
 
         /**
-         * Renders the list of channels into the DOM based on the current page.
-         * @param {Array} channelsToRender The array of channel objects to display.
+         * NEW FUNCTION: Fetches and renders partner channels.
          */
-        function renderChannels(channelsToRender = filteredAndSortedChannels) {
-            const container = document.getElementById('channelsContainer');
-            // No need to get ratedChannels and boostedChannels here, handled in canRateChannel and canBoostChannel
+        async function loadPartnerChannels() {
+            const partnerContainer = document.getElementById('partnerChannelsGrid');
+            const partnerSection = document.getElementById('partnerChannelsSection');
+            partnerContainer.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Ładowanie kanałów partnerskich...</p>
+                </div>
+            `; // Show loading spinner
 
-            const startIndex = (currentPage - 1) * channelsPerPage;
-            const endIndex = startIndex + channelsPerPage;
-            const channelsOnPage = channelsToRender.slice(startIndex, endIndex);
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/partner_channels`);
+                if (response.ok) {
+                    const partnerChannels = await response.json();
+                    if (partnerChannels.length > 0) {
+                        partnerSection.classList.add('show'); // Show the section if there are partners
+                        renderPartnerChannels(partnerChannels);
+                    } else {
+                        partnerSection.classList.remove('show'); // Hide if no partner channels
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas ładowania kanałów partnerskich', 'error');
+                    partnerContainer.innerHTML = '<div class="loading"><p>Nie udało się załadować kanałów partnerskich.</p></div>';
+                }
+            } catch (error) {
+                console.error('Błąd podczas ładowania kanałów partnerskich:', error);
+                showNotification('Błąd połączenia z serwerem podczas ładowania kanałów partnerskich.', 'error');
+                partnerContainer.innerHTML = '<div class="loading"><p>Brak połączenia z serwerem.</p></div>';
+            }
+        }
 
-            if (channelsOnPage.length === 0) {
-                container.innerHTML = '<div class="loading"><p>Nie znaleziono kanałów.</p></div>';
-                renderPaginationControls(); // Still render controls even if no channels
+        /**
+         * NEW FUNCTION: Renders the list of partner channels into the DOM.
+         * @param {Array} partnerChannels The array of partner channel objects to display.
+         */
+        function renderPartnerChannels(partnerChannels) {
+            const partnerContainer = document.getElementById('partnerChannelsGrid');
+            const ratedChannels = getRatedChannelsFromLocalStorage();
+            const boostedChannels = getBoostedChannelsFromLocalStorage();
+
+            if (partnerChannels.length === 0) {
+                partnerContainer.innerHTML = '<div class="loading"><p>Brak kanałów partnerskich.</p></div>';
                 return;
             }
 
-            // Generate HTML for each channel card
-            const channelsHTML = channelsOnPage.map(channel => {
+            const channelsHTML = partnerChannels.map(channel => {
                 const canRate = canRateChannel(channel.id);
                 const starsClass = canRate ? '' : 'disabled';
                 const canBoost = canBoostChannel(channel.id);
                 const boostButtonDisabled = !canBoost ? 'disabled' : '';
-                const canUnboost = canUnboostChannel(channel.id); // Check unboost cooldown
-                const unboostButtonDisabled = !canUnboost ? 'disabled' : ''; // Disable state for unboost
+                const canUnboost = canUnboostChannel(channel.id);
+                const unboostButtonDisabled = !canUnboost ? 'disabled' : '';
 
-                // Poprawka dla błędu URI malformed: Użycie Array.from do bezpiecznego pobrania pierwszej litery
                 const firstChar = (channel.name && channel.name.length > 0) ? Array.from(channel.name)[0] : '';
                 const encodedFirstChar = encodeURIComponent(firstChar.toUpperCase());
 
                 return `
-                <div class="channel-card">
+                <div class="channel-card partner-channel-card">
                     <div class="channel-header">
                         <div class="channel-avatar">
                             ${channel.profileImageUrl ? `<img src="${channel.profileImageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/1a4d3a/ffffff?text=${encodedFirstChar}'" alt="Profil kanału">` : (firstChar ? firstChar.toUpperCase() : 'C')}
                         </div>
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
-                            <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount.toLocaleString('pl-PL') + ' obserwujących' : 'Brak danych o obserwujących'}</p>
+                            <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' obserwujących' : 'Brak danych o obserwujących'}</p>
                         </div>
-                        <div class="channel-actions">
-                            <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boostuj</button>
-                            <button class="btn-boost btn-unboost" onclick="handleUnboostClick(${channel.id})" ${unboostButtonDisabled}>Unboostuj</button>
-                        </div>
+                        <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boostuj</button>
+                        <button class="btn-boost btn-unboost" onclick="handleUnboostClick(${channel.id})" ${unboostButtonDisabled}>Unboostuj</button>
                     </div>
 
                     <div class="rating-section">
@@ -1185,18 +1143,114 @@
                         </div>
 
                         <div class="comments-list">
-                            ${channel.comments && channel.comments.length > 0 ? channel.comments.map(comment => `
+                            ${channel.comments.length > 0 ? channel.comments.map(comment => `
                                 <div class="comment">
-                                    <div class="comment-author">${comment.author || 'Anonim'}</div>
-                                    <div class="comment-date">${comment.date || 'Data nieznana'}</div>
+                                    <div class="comment-author">${comment.author}</div>
+                                    <div class="comment-date">${comment.date}</div>
                                     <div>${comment.text}</div>
                                 </div>
-                            `).join('') : '<p style="font-size: 0.9em; color: #999; padding: 10px;">Brak komentarzy. Bądź pierwszy!</p>'}
+                            `).join('') : '<p style="font-size: 0.9em; color: #999;">Brak komentarzy. Bądź pierwszy!</p>'}
                         </div>
                     </div>
 
                     <div class="collapsible-content" id="collapsibleContent-${channel.id}">
-                        <div class="channel-description">${channel.description || 'Brak opisu.'}</div>
+                        <div class="channel-description">${channel.description}</div>
+                        <a href="${channel.link}" target="_blank" class="btn btn-success" style="margin-top: 15px; display: inline-block; text-decoration: none;">Dołącz do kanału</a>
+                    </div>
+                    <button class="btn btn-toggle-content" onclick="toggleChannelContent(event, ${channel.id})">...Pokaż więcej</button>
+                </div>
+                `;
+            }).join('');
+
+            partnerContainer.innerHTML = channelsHTML;
+
+            // Add event listeners for stars after rendering
+            document.querySelectorAll('#partnerChannelsGrid .star').forEach(star => {
+                const starsContainer = star.closest('.stars');
+                if (!starsContainer.classList.contains('disabled')) { // Only add listeners if not disabled
+                    star.addEventListener('click', handleStarClick);
+                    star.addEventListener('mouseover', handleStarHover);
+                    star.addEventListener('mouseout', handleStarOut);
+                }
+            });
+        }
+
+
+        /**
+         * Renders the list of channels into the DOM based on the current page.
+         * @param {Array} channelsToRender The array of channel objects to display.
+         */
+        function renderChannels(channelsToRender = filteredAndSortedChannels) {
+            const container = document.getElementById('channelsContainer');
+            const ratedChannels = getRatedChannelsFromLocalStorage(); // Get current rated status
+            const boostedChannels = getBoostedChannelsFromLocalStorage(); // Get current boosted status
+
+            const startIndex = (currentPage - 1) * channelsPerPage;
+            const endIndex = startIndex + channelsPerPage;
+            const channelsOnPage = channelsToRender.slice(startIndex, endIndex);
+
+            if (channelsOnPage.length === 0) {
+                container.innerHTML = '<div class="loading"><p>Nie znaleziono kanałów.</p></div>';
+                renderPaginationControls(); // Still render controls even if no channels
+                return;
+            }
+
+            // Generate HTML for each channel card
+            const channelsHTML = channelsOnPage.map(channel => {
+                const canRate = canRateChannel(channel.id);
+                const starsClass = canRate ? '' : 'disabled';
+                const canBoost = canBoostChannel(channel.id);
+                const boostButtonDisabled = !canBoost ? 'disabled' : '';
+                const canUnboost = canUnboostChannel(channel.id); // NEW: Check unboost cooldown
+                const unboostButtonDisabled = !canUnboost ? 'disabled' : ''; // NEW: Disable state for unboost
+
+                // Poprawka dla błędu URI malformed: Użycie Array.from do bezpiecznego pobrania pierwszej litery
+                const firstChar = (channel.name && channel.name.length > 0) ? Array.from(channel.name)[0] : '';
+                const encodedFirstChar = encodeURIComponent(firstChar.toUpperCase());
+
+                return `
+                <div class="channel-card">
+                    <div class="channel-header">
+                        <div class="channel-avatar">
+                            ${channel.profileImageUrl ? `<img src="${channel.profileImageUrl}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/1a4d3a/ffffff?text=${encodedFirstChar}'" alt="Profil kanału">` : (firstChar ? firstChar.toUpperCase() : 'C')}
+                        </div>
+                        <div class="channel-info">
+                            <h3>${channel.name}</h3>
+                            <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' obserwujących' : 'Brak danych o obserwujących'}</p>
+                        </div>
+                        <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boostuj</button>
+                        <button class="btn-boost btn-unboost" onclick="handleUnboostClick(${channel.id})" ${unboostButtonDisabled}>Unboostuj</button>
+                    </div>
+
+                    <div class="rating-section">
+                        <div class="stars ${starsClass}" data-channel-id="${channel.id}" data-current-rating="${channel.rating}">
+                            ${generateStars(channel.id, channel.rating, !canRate)}
+                        </div>
+                        <div class="rating-info">
+                            <span>Średnia ocena: ${channel.rating !== undefined ? channel.rating.toFixed(1) : '0.0'}/5</span>
+                            <span>${channel.ratingsCount !== undefined ? channel.ratingsCount : 0} ocen</span>
+                        </div>
+                    </div>
+
+                    <div class="comments-section">
+                        <div class="comment-form">
+                            <textarea class="comment-textarea" placeholder="Napisz swoją opinię..." data-channel-id="${channel.id}"></textarea>
+                            <button class="btn btn-primary" onclick="addComment(${channel.id})" style="margin-top: 10px;">Dodaj komentarz</button>
+                        </div>
+
+                        <div class="comments-list">
+                            ${channel.comments.length > 0 ? channel.comments.map(comment => `
+                                <div class="comment">
+                                    <div class="comment-author">${comment.author}</div>
+                                    <div class="comment-date">${comment.date}</div>
+                                    <div>${comment.text}</div>
+                                </div>
+                            `).join('') : '<p style="font-size: 0.9em; color: #999;">Brak komentarzy. Bądź pierwszy!</p>'}
+                        </div>
+                    </div>
+
+                    <div class="collapsible-content" id="collapsibleContent-${channel.id}">
+                        <div class="channel-description">${channel.description}</div>
                         <a href="${channel.link}" target="_blank" class="btn btn-success" style="margin-top: 15px; display: inline-block; text-decoration: none;">Dołącz do kanału</a>
                     </div>
                     <button class="btn btn-toggle-content" onclick="toggleChannelContent(event, ${channel.id})">...Pokaż więcej</button>
@@ -1207,7 +1261,7 @@
             container.innerHTML = `<div class="channels-grid">${channelsHTML}</div>`;
 
             // Add event listeners for stars after rendering
-            document.querySelectorAll('.star').forEach(star => {
+            document.querySelectorAll('#channelsContainer .star').forEach(star => {
                 const starsContainer = star.closest('.stars');
                 if (!starsContainer.classList.contains('disabled')) { // Only add listeners if not disabled
                     star.addEventListener('click', handleStarClick);
@@ -1228,15 +1282,9 @@
 
             const totalPages = Math.ceil(filteredAndSortedChannels.length / channelsPerPage);
 
-            if (totalPages <= 1 && filteredAndSortedChannels.length > 0) { // Show if more than 0 channels and 1 page
+            if (totalPages <= 1) {
                 return; // No pagination needed for 1 or less pages
-            } else if (totalPages <= 0 && filteredAndSortedChannels.length === 0) {
-                // If no channels found at all, hide pagination
-                paginationContainer.style.display = 'none';
-                return;
             }
-
-            paginationContainer.style.display = 'flex'; // Ensure it's visible if there are pages
 
             // Previous button
             const prevButton = document.createElement('button');
@@ -1246,15 +1294,7 @@
             paginationContainer.appendChild(prevButton);
 
             // Page number buttons
-            const maxPageButtons = 5; // Max number of page buttons to show
-            let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
-            let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
-
-            if (endPage - startPage + 1 < maxPageButtons) {
-                startPage = Math.max(1, endPage - maxPageButtons + 1);
-            }
-
-            for (let i = startPage; i <= endPage; i++) {
+            for (let i = 1; i <= totalPages; i++) {
                 const pageButton = document.createElement('button');
                 pageButton.textContent = i;
                 pageButton.classList.toggle('active', i === currentPage);
@@ -1292,7 +1332,7 @@
          */
         function generateStars(channelId, rating, isDisabled = false) {
             let starsHTML = '';
-            const roundedRating = Math.round(rating); // Round to nearest whole number for active stars
+            const roundedRating = Math.round(rating);
             for (let i = 1; i <= 5; i++) {
                 const isActive = i <= roundedRating;
                 const disabledAttr = isDisabled ? 'disabled' : '';
@@ -1328,6 +1368,7 @@
                     ratedChannels[channelId] = Date.now(); // Store current timestamp
                     setRatedChannelsToLocalStorage(ratedChannels);
                     loadChannels(); // Reload channels to update UI (disable stars)
+                    loadPartnerChannels(); // Also reload partner channels in case it was one of them
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania oceny', 'error');
@@ -1351,9 +1392,9 @@
 
             stars.forEach((star, index) => {
                 if (index < hoveredRating) {
-                    star.style.color = 'var(--star-color-active)';
+                    star.style.color = '#ffd700';
                 } else {
-                    star.style.color = 'var(--star-color-inactive)';
+                    star.style.color = '#ddd';
                 }
             });
         }
@@ -1372,9 +1413,9 @@
 
             stars.forEach((star, index) => {
                 if (index < Math.round(currentAvgRating)) {
-                    star.style.color = 'var(--star-color-active)';
+                    star.style.color = '#ffd700';
                 } else {
-                    star.style.color = 'var(--star-color-inactive)';
+                    star.style.color = '#ddd';
                 }
             });
         }
@@ -1403,6 +1444,7 @@
                     textarea.value = '';
                     showNotification('Komentarz został dodany!');
                     loadChannels(); // Reload channels to get updated comments
+                    loadPartnerChannels(); // Also reload partner channels in case it was one of them
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania komentarza', 'error');
@@ -1439,6 +1481,7 @@
                     document.getElementById('channelLink').value = '';
                     showNotification('Kanał został dodany!');
                     loadChannels(); // Reload channels to show new one
+                    loadPartnerChannels(); // Also reload partner channels if any
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas dodawania kanału', 'error');
@@ -1476,6 +1519,7 @@
 
                     // Reload channels to get the new global order from backend
                     loadChannels();
+                    loadPartnerChannels(); // Also reload partner channels in case it was one of them
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas boostowania kanału', 'error');
@@ -1513,6 +1557,7 @@
 
                     // Reload channels to get the new global order from backend
                     loadChannels();
+                    loadPartnerChannels(); // Also reload partner channels in case it was one of them
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas unboostowania kanału', 'error');
@@ -1536,7 +1581,7 @@
             if (searchTerm) {
                 tempChannels = tempChannels.filter(channel =>
                     channel.name.toLowerCase().includes(searchTerm) ||
-                    (channel.description && channel.description.toLowerCase().includes(searchTerm))
+                    channel.description.toLowerCase().includes(searchTerm)
                 );
             }
 
@@ -1629,8 +1674,9 @@
 
         // Initialization logic: Load channels when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', function() {
-            loadChannels();
-
+            loadPartnerChannels(); // NEW: Load partner channels first
+            loadChannels(); // Load regular channels
+            
             // Add enter key listener for search input
             document.getElementById('searchInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
