@@ -16,14 +16,14 @@ import re
 load_dotenv()
 
 app = Flask(__name__)
-# Initialize CORS - allows requests from all origins (*)\
+# Initialize CORS - allows requests from all origins (*)
 CORS(app)
 
 # Database connection details
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# --- Admin Panel Passwords (from Environment Variables) ---\
-# This remains separate for admin panel authentication.\
+# --- Admin Panel Passwords (from Environment Variables) ---
+# This remains separate for admin panel authentication.
 ADMIN_PASS1 = os.environ.get('ADMIN_PASS1', 'default_admin123') # Ustaw to na Render.com
 ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') # Ustaw to na Render.com
 ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') # Token do autoryzacji operacji
@@ -82,7 +82,8 @@ def initialize_db():
                 ratings_count INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_boosted TIMESTAMP DEFAULT NULL,
-                is_partner BOOLEAN DEFAULT FALSE -- NOWA KOLUMNA: czy kanał jest partnerem
+                is_partner BOOLEAN DEFAULT FALSE, -- Kolumna: czy kanał jest partnerem
+                category VARCHAR(255) DEFAULT 'Ogólne' -- NOWA KOLUMNA: kategoria kanału
             );
         """)
         conn.commit() # Commit the table creation immediately
@@ -121,6 +122,20 @@ def initialize_db():
             if conn and not conn.autocommit:
                 conn.rollback()
             print(f"WARNING: Błąd podczas dodawania kolumny 'is_partner': {e}")
+        finally:
+            pass
+
+        # Dodaj kolumnę category, jeśli nie istnieje
+        try:
+            cur.execute("""
+                ALTER TABLE channels ADD COLUMN IF NOT EXISTS category VARCHAR(255) DEFAULT 'Ogólne';
+            """)
+            conn.commit()
+            print("INFO: Kolumna 'category' w tabeli 'channels' została sprawdzona/dodana pomyślnie.")
+        except Exception as e:
+            if conn and not conn.autocommit:
+                conn.rollback()
+            print(f"WARNING: Błąd podczas dodawania kolumny 'category': {e}")
         finally:
             pass
 
@@ -202,7 +217,7 @@ def fetch_channel_details_from_whatsapp_page(url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # --- Próba znalezienia nazwy kanału ---\
+        # --- Próba znalezienia nazwy kanału ---
         name_tag = soup.find('meta', property='og:title')
         if name_tag and name_tag.get('content'):
             channel_name = name_tag['content'].strip()
@@ -215,7 +230,7 @@ def fetch_channel_details_from_whatsapp_page(url):
             if not channel_name:
                 channel_name = "Kanał WhatsApp" # Fallback, jeśli nie znaleziono nazwy
 
-        # --- Próba znalezienia opisu kanału ---\
+        # --- Próba znalezienia opisu kanału ---
         description_tag = soup.find('meta', property='og:description')
         if description_tag and description_tag.get('content'):
             channel_description = description_tag['content'].strip()
@@ -229,8 +244,8 @@ def fetch_channel_details_from_whatsapp_page(url):
         if not channel_description:
             channel_description = "Brak dostępnego opisu." # Domyślny opis
 
-        # --- Próba znalezienia liczby obserwujących ---\
-        # Jest to bardzo zawodne ze względu na dynamiczną zawartość i środki antyskapingowe.\
+        # --- Próba znalezienia liczby obserwujących ---
+        # Jest to bardzo zawodne ze względu na dynamiczną zawartość i środki antyskapingowe.
         follower_element = soup.find(text=lambda text: text and ("obserwujący" in text.lower() or "followers" in text.lower()))
         if follower_element:
             try:
@@ -254,7 +269,7 @@ def fetch_channel_details_from_whatsapp_page(url):
                 print(f"DEBUG: Nie można było sparsować liczby obserwujących z: '{text_with_followers}'")
                 pass # Zachowaj domyślne 0
 
-        # --- Próba znalezienia adresu URL obrazu profilowego ---\
+        # --- Próba znalezienia adresu URL obrazu profilowego ---
         image_tag = soup.find('meta', property='og:image')
         if image_tag and image_tag.get('content'):
             profile_image_url = image_tag['content'].strip()
@@ -299,18 +314,19 @@ def get_channels():
         conn = get_db_connection()
         cur = conn.cursor()
         # Pobierz tylko kanały, które NIE są partnerami
-        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url FROM channels WHERE is_partner = FALSE ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, category FROM channels WHERE is_partner = FALSE ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
         for channel in channels_data:
             channel_id = channel[0]
-            cur.execute("SELECT author, text, created_at FROM comments WHERE channel_id = %s ORDER BY created_at DESC;", (channel_id,))
+            cur.execute("SELECT id, author, text, created_at FROM comments WHERE channel_id = %s ORDER BY created_at DESC;", (channel_id,))
             comments_data = cur.fetchall()
             comments_list = [{
-                'author': c[0],
-                'text': c[1],
-                'date': c[2].isoformat().split('T')[0]
+                'id': c[0], # Dodano ID komentarza
+                'author': c[1],
+                'text': c[2],
+                'date': c[3].isoformat().split('T')[0]
             } for c in comments_data]
 
             channels_list.append({
@@ -322,6 +338,7 @@ def get_channels():
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
                 'followerCount': channel[6] if channel[6] is not None else 0,
                 'profileImageUrl': channel[7],
+                'category': channel[8], # Dodano kategorię
                 'comments': comments_list
             })
         return jsonify(channels_list)
@@ -343,18 +360,19 @@ def get_partner_channels():
         conn = get_db_connection()
         cur = conn.cursor()
         # Pobierz tylko kanały, które SĄ partnerami
-        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url FROM channels WHERE is_partner = TRUE ORDER BY created_at DESC;")
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, category FROM channels WHERE is_partner = TRUE ORDER BY created_at DESC;")
         channels_data = cur.fetchall()
 
         partner_channels_list = []
         for channel in channels_data:
             channel_id = channel[0]
-            cur.execute("SELECT author, text, created_at FROM comments WHERE channel_id = %s ORDER BY created_at DESC;", (channel_id,))
+            cur.execute("SELECT id, author, text, created_at FROM comments WHERE channel_id = %s ORDER BY created_at DESC;", (channel_id,))
             comments_data = cur.fetchall()
             comments_list = [{
-                'author': c[0],
-                'text': c[1],
-                'date': c[2].isoformat().split('T')[0]
+                'id': c[0], # Dodano ID komentarza
+                'author': c[1],
+                'text': c[2],
+                'date': c[3].isoformat().split('T')[0]
             } for c in comments_data]
 
             partner_channels_list.append({
@@ -366,6 +384,7 @@ def get_partner_channels():
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
                 'followerCount': channel[6] if channel[6] is not None else 0,
                 'profileImageUrl': channel[7],
+                'category': channel[8], # Dodano kategorię
                 'comments': comments_list
             })
         return jsonify(partner_channels_list)
@@ -389,6 +408,8 @@ def add_channel():
     frontend_name = data.get('name')
     frontend_description = data.get('description')
     frontend_profile_image_url = data.get('profileImageUrl')
+    # Nowa: frontend może przesłać kategorię
+    frontend_category = data.get('category', 'Ogólne')
 
 
     if not link:
@@ -411,6 +432,7 @@ def add_channel():
     description = scraped_data['description'] if scraped_data and scraped_data['description'] else frontend_description # Użyj scraped, fallback do frontend
     follower_count = scraped_data['follower_count'] if scraped_data else 0
     profile_image_url = scraped_data['profile_image_url'] if scraped_data and scraped_data['profile_image_url'] else frontend_profile_image_url
+    category = frontend_category # Użyj kategorii z frontendu, jeśli jest, w przeciwnym razie domyślna
 
     # Ostateczne fallbacki, jeśli scraping i frontend nie dostarczyły danych
     if not name:
@@ -424,8 +446,8 @@ def add_channel():
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO channels (name, description, link, follower_count, profile_image_url) VALUES (%s, %s, %s, %s, %s) RETURNING id;",
-            (name, description, link, follower_count, profile_image_url)
+            "INSERT INTO channels (name, description, link, follower_count, profile_image_url, category) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;",
+            (name, description, link, follower_count, profile_image_url, category)
         )
         channel_id = cur.fetchone()[0]
         conn.commit()
@@ -435,7 +457,8 @@ def add_channel():
             "name": name,
             "description": description,
             "followerCount": follower_count,
-            "profileImageUrl": profile_image_url
+            "profileImageUrl": profile_image_url,
+            "category": category
         }), 201
     except psycopg2.errors.UniqueViolation:
         if conn:
@@ -453,7 +476,7 @@ def add_channel():
         if conn:
             conn.close()
 
-# --- Admin API Endpoints (pozostają zabezpieczone tokenem) ---\
+# --- Admin API Endpoints (pozostają zabezpieczone tokenem) ---
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
     """Uwierzytelnia administratorów i zwraca token."""
@@ -472,7 +495,7 @@ def admin_login():
 @app.route('/api/admin/channels', methods=['GET'])
 def get_admin_channels():
     """
-    Pobiera wszystkie kanały z bazy danych, w tym status 'is_partner',
+    Pobiera wszystkie kanały z bazy danych, w tym status 'is_partner' i kategorię,
     dostępne tylko dla administratora.
     """
     if not verify_admin_token(request.headers):
@@ -484,18 +507,19 @@ def get_admin_channels():
         conn = get_db_connection()
         cur = conn.cursor()
         # Pobierz WSZYSTKIE kanały dla panelu admina
-        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, is_partner FROM channels ORDER BY created_at DESC;")
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, is_partner, category FROM channels ORDER BY created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
         for channel in channels_data:
             channel_id = channel[0]
-            cur.execute("SELECT author, text, created_at FROM comments WHERE channel_id = %s ORDER BY created_at DESC;", (channel_id,))
+            cur.execute("SELECT id, author, text, created_at FROM comments WHERE channel_id = %s ORDER BY created_at DESC;", (channel_id,))
             comments_data = cur.fetchall()
             comments_list = [{
-                'author': c[0],
-                'text': c[1],
-                'date': c[2].isoformat().split('T')[0]
+                'id': c[0], # Dodano ID komentarza
+                'author': c[1],
+                'text': c[2],
+                'date': c[3].isoformat().split('T')[0]
             } for c in comments_data]
 
             channels_list.append({
@@ -508,12 +532,66 @@ def get_admin_channels():
                 'followerCount': channel[6] if channel[6] is not None else 0,
                 'profileImageUrl': channel[7],
                 'is_partner': channel[8], # Dodano status is_partner
+                'category': channel[9], # Dodano kategorię
                 'comments': comments_list
             })
         return jsonify(channels_list)
     except Exception as e:
         print(f"ERROR: Błąd podczas pobierania kanałów dla administratora: {e}")
         return jsonify({"error": "Błąd podczas ładowania kanałów dla administratora"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+@app.route('/api/admin/channels/<int:channel_id>', methods=['PUT'])
+def update_channel(channel_id):
+    """
+    Aktualizuje szczegóły kanału (nazwę, opis, link, profilowe URL, kategorię).
+    Dostępne tylko dla administratora.
+    """
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    data = request.get_json()
+    name = data.get('name')
+    description = data.get('description')
+    link = data.get('link')
+    profile_image_url = data.get('profileImageUrl')
+    category = data.get('category', 'Ogólne') # Użyj domyślnej, jeśli nie podana
+
+    if not all([name, description, link]):
+        return jsonify({"error": "Wszystkie pola (nazwa, opis, link) są wymagane."}), 400
+
+    if not is_valid_whatsapp_channel_link(link):
+        return jsonify({"error": "Nieprawidłowy format linku kanału WhatsApp."}), 400
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE channels SET name = %s, description = %s, link = %s, profile_image_url = %s, category = %s WHERE id = %s RETURNING id;",
+            (name, description, link, profile_image_url, category, channel_id)
+        )
+        updated_id = cur.fetchone()
+        conn.commit()
+
+        if updated_id:
+            return jsonify({"message": f"Kanał o ID {channel_id} został pomyślnie zaktualizowany."}), 200
+        else:
+            return jsonify({"error": "Kanał nie znaleziony."}), 404
+    except psycopg2.errors.UniqueViolation:
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Kanał o podanym linku już istnieje."}), 409
+    except Exception as e:
+        print(f"ERROR: Błąd podczas aktualizacji kanału {channel_id}: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Błąd podczas aktualizacji kanału."}), 500
     finally:
         if cur:
             cur.close()
@@ -550,6 +628,37 @@ def delete_channel(channel_id):
             cur.close()
         if conn:
             conn.close()
+
+@app.route('/api/admin/comments/<int:comment_id>', methods=['DELETE'])
+def delete_comment(comment_id):
+    """Usuwa określony komentarz z bazy danych (tylko dla administratora)."""
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM comments WHERE id = %s RETURNING id;", (comment_id,))
+        deleted_id = cur.fetchone()
+        conn.commit()
+
+        if deleted_id:
+            return jsonify({"message": f"Komentarz o ID {comment_id} został pomyślnie usunięty."}), 200
+        else:
+            return jsonify({"error": "Komentarz nie znaleziony."}), 404
+    except Exception as e:
+        print(f"ERROR: Błąd podczas usuwania komentarza {comment_id}: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Błąd podczas usuwania komentarza."}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 
 @app.route('/api/channels/all', methods=['DELETE'])
 def clear_all_channels():
@@ -690,6 +799,44 @@ def boost_channel(channel_id):
         if conn:
             conn.close()
 
+@app.route('/api/admin/channels/<int:channel_id>/admin_boost', methods=['POST'])
+def admin_boost_channel(channel_id):
+    """
+    Ustawia znacznik czasu ostatniego boostowania kanału na bieżący czas (bez cooldownu).
+    Dostępne tylko dla administratora.
+    """
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            "UPDATE channels SET last_boosted = CURRENT_TIMESTAMP WHERE id = %s RETURNING name;",
+            (channel_id,)
+        )
+        boosted_channel_name = cur.fetchone()
+        conn.commit()
+
+        if boosted_channel_name:
+            return jsonify({"message": f"Kanał '{boosted_channel_name[0]}' został pomyślnie zboostowany przez administratora!"}), 200
+        else:
+            return jsonify({"error": "Kanał nie znaleziony."}), 404
+    except Exception as e:
+        print(f"ERROR: Błąd podczas boostowania kanału przez administratora {channel_id}: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Błąd podczas boostowania kanału przez administratora."}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
 @app.route('/api/channels/<int:channel_id>/unboost', methods=['POST'])
 def unboost_channel(channel_id):
     """
@@ -702,7 +849,7 @@ def unboost_channel(channel_id):
         cur = conn.cursor()
 
         # Update the last_boosted timestamp to a very old date (Unix Epoch)
-        # This will push it to the end of the DESC NULLS LAST sort.\
+        # This will push it to the end of the DESC NULLS LAST sort.
         unboost_timestamp = datetime(1970, 1, 1)
         cur.execute(
             "UPDATE channels SET last_boosted = %s WHERE id = %s RETURNING name;",
@@ -726,6 +873,45 @@ def unboost_channel(channel_id):
             cur.close()
         if conn:
             conn.close()
+
+@app.route('/api/admin/channels/<int:channel_id>/admin_unboost', methods=['POST'])
+def admin_unboost_channel(channel_id):
+    """
+    Ustawia znacznik czasu 'last_boosted' na bardzo starą datę (bez cooldownu).
+    Dostępne tylko dla administratora.
+    """
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        unboost_timestamp = datetime(1970, 1, 1) # Unix Epoch
+        cur.execute(
+            "UPDATE channels SET last_boosted = %s WHERE id = %s RETURNING name;",
+            (unboost_timestamp, channel_id)
+        )
+        unboosted_channel_name = cur.fetchone()
+        conn.commit()
+
+        if unboosted_channel_name:
+            return jsonify({"message": f"Kanał '{unboosted_channel_name[0]}' został 'unboostowany' przez administratora."}), 200
+        else:
+            return jsonify({"error": "Kanał nie znaleziony."}), 404
+    except Exception as e:
+        print(f"ERROR: Błąd podczas unboostowania kanału przez administratora {channel_id}: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Błąd podczas unboostowania kanału przez administratora."}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 
 @app.route('/api/channels/<int:channel_id>/toggle_partner', methods=['POST'])
 def toggle_partner_status(channel_id):
