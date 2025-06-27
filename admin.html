@@ -127,6 +127,27 @@
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
         }
 
+        .btn-success-light { /* New button for Edit */
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
+        }
+        .btn-success-light:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+        }
+
+        .btn-admin-action { /* General style for admin boost/unboost */
+            background: linear-gradient(45deg, #8e44ad, #9b59b6);
+            color: white;
+            font-size: 0.9em;
+            padding: 8px 12px;
+            margin-top: 5px; /* Spacing between admin action buttons */
+        }
+        .btn-admin-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(142, 68, 173, 0.4);
+        }
+
 
         .channel-list {
             list-style: none;
@@ -145,6 +166,7 @@
             border-radius: 8px;
             margin-bottom: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            text-align: left; /* Align text within item to left */
         }
 
         .channel-item:last-child {
@@ -153,8 +175,8 @@
 
         .channel-item-info {
             flex-grow: 1;
-            text-align: left;
-            margin-bottom: 10px; /* Dodany margines dla małych ekranów */
+            /* text-align: left; -> already on channel-item */
+            margin-bottom: 10px; /* Added margin for small screens */
         }
         
         .channel-item-actions {
@@ -163,8 +185,14 @@
             gap: 10px;
             align-items: flex-end; /* Wyrównaj przyciski do prawej na dużych ekranach */
             width: 100%; /* Na małych ekranach zajmij całą szerokość */
+            margin-top: 10px; /* Space between info and actions on small screens */
         }
         
+        /* New: for comment actions */
+        .comment-actions {
+            margin-left: 10px; /* Space between comment text and delete button */
+        }
+
         @media (min-width: 768px) { /* Na większych ekranach zmień układ na wiersz */
             .channel-item-info {
                 margin-bottom: 0;
@@ -172,6 +200,7 @@
             .channel-item-actions {
                 flex-direction: row;
                 width: auto;
+                margin-top: 0; /* Remove margin when in row */
             }
         }
 
@@ -189,6 +218,37 @@
             color: #666;
             word-break: break-word;
         }
+
+        .channel-item-comments {
+            width: 100%; /* Take full width below channel info and actions */
+            margin-top: 15px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+
+        .comment {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #2d5a2d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .comment-text {
+            flex-grow: 1;
+        }
+        .comment-text p {
+            margin: 0;
+            font-size: 0.9em;
+        }
+        .comment-author-date {
+            font-size: 0.8em;
+            color: #777;
+            margin-top: 5px;
+        }
+
 
         .notification {
             position: fixed;
@@ -237,6 +297,67 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1001; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto; /* Center modal */
+            padding: 30px;
+            border: 1px solid #888;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+            animation-name: animatetop;
+            animation-duration: 0.4s;
+            text-align: left;
+        }
+
+        /* Add Animation */
+        @keyframes animatetop {
+            from {top: -300px; opacity: 0}
+            to {top: 0; opacity: 1}
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: -20px;
+            margin-right: -10px;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-buttons {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .modal-buttons button {
+            margin-left: 10px;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .container {
@@ -259,6 +380,10 @@
             }
             .btn-danger {
                 width: 100%;
+            }
+            .modal-content {
+                width: 95%;
+                padding: 20px;
             }
         }
     </style>
@@ -288,11 +413,56 @@
                     <p>Ładowanie kanałów do zarządzania...</p>
                 </div>
             </div>
-            <button class="btn btn-warning" onclick="confirmClearAllChannels()" style="margin-top: 20px;">Wyczyść Wszystkie Kanały</button>
+            <button class="btn btn-warning" onclick="showConfirmModal('Czy na pewno chcesz usunąć WSZYSTKIE kanały i komentarze? To jest NIEODWRACALNE!', clearAllChannels)">Wyczyść Wszystkie Kanały</button>
         </div>
     </div>
 
     <div id="notification" class="notification"></div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="hideConfirmModal()">&times;</span>
+            <p id="confirmModalMessage"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-danger" id="confirmModalYesBtn">Tak</button>
+                <button class="btn btn-primary" onclick="hideConfirmModal()">Anuluj</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Channel Modal -->
+    <div id="editChannelModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="hideEditChannelModal()">&times;</span>
+            <h2>Edytuj Kanał</h2>
+            <input type="hidden" id="editChannelId">
+            <div class="form-group">
+                <label for="editChannelName">Nazwa:</label>
+                <input type="text" class="form-input" id="editChannelName" required>
+            </div>
+            <div class="form-group">
+                <label for="editChannelDescription">Opis:</label>
+                <textarea class="form-input" id="editChannelDescription" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="editChannelLink">Link:</label>
+                <input type="url" class="form-input" id="editChannelLink" required>
+            </div>
+            <div class="form-group">
+                <label for="editProfileImageUrl">URL Obrazka Profilowego:</label>
+                <input type="url" class="form-input" id="editProfileImageUrl">
+            </div>
+            <div class="form-group">
+                <label for="editChannelCategory">Kategoria:</label>
+                <input type="text" class="form-input" id="editChannelCategory" value="Ogólne">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="submitEditChannel()">Zapisz Zmiany</button>
+                <button class="btn btn-danger" onclick="hideEditChannelModal()">Anuluj</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const API_BASE_URL = 'https://whapineobackend.onrender.com'; // Your Render backend URL here
@@ -312,6 +482,31 @@
             setTimeout(() => {
                 notification.classList.remove('show');
             }, 3000);
+        }
+
+        /**
+         * Shows a custom confirmation modal.
+         * @param {string} message The message to display in the modal.
+         * @param {function} callback The function to execute if the user confirms.
+         */
+        function showConfirmModal(message, callback) {
+            const modal = document.getElementById('confirmModal');
+            const messageElement = document.getElementById('confirmModalMessage');
+            const yesBtn = document.getElementById('confirmModalYesBtn');
+
+            messageElement.textContent = message;
+            yesBtn.onclick = () => {
+                hideConfirmModal();
+                callback();
+            };
+            modal.style.display = 'flex'; // Use flex to center
+        }
+
+        /**
+         * Hides the custom confirmation modal.
+         */
+        function hideConfirmModal() {
+            document.getElementById('confirmModal').style.display = 'none';
         }
 
         /**
@@ -357,7 +552,6 @@
                 </div>
             `;
             try {
-                // Ta lista kanałów WYMAGA teraz tokena admina, aby pobrać pełne dane (w tym is_partner)
                 const response = await fetch(`${API_BASE_URL}/api/admin/channels`, {
                     headers: {
                         'Authorization': `Bearer ${adminToken}` // Include the token
@@ -393,17 +587,34 @@
                 <li class="channel-item">
                     <div class="channel-item-info">
                         <h4>${channel.name} (ID: ${channel.id})</h4>
-                        <p>${channel.description}</p>
+                        <p>Opis: ${channel.description}</p>
                         <p>Link: <a href="${channel.link}" target="_blank">${channel.link}</a></p>
+                        <p>Obrazek: ${channel.profileImageUrl ? `<a href="${channel.profileImageUrl}" target="_blank">Link</a>` : 'Brak'}</p>
                         <p>Obserwujących: ${channel.followerCount !== undefined ? channel.followerCount : 0}</p>
                         <p>Ocena: ${channel.rating.toFixed(1)}/5 (${channel.ratingsCount} ocen)</p>
+                        <p>Kategoria: <strong>${channel.category}</strong></p>
                         <p>Partner: <strong>${channel.is_partner ? 'TAK' : 'NIE'}</strong></p>
                     </div>
                     <div class="channel-item-actions">
+                        <button class="btn btn-admin-action" onclick="adminBoostChannel(${channel.id})">Admin Boost</button>
+                        <button class="btn btn-admin-action" onclick="adminUnboostChannel(${channel.id})">Admin Unboost</button>
+                        <button class="btn btn-success-light" onclick="showEditChannelModal(${channel.id}, '${channel.name.replace(/'/g, "\\'")}', '${channel.description.replace(/'/g, "\\'")}', '${channel.link.replace(/'/g, "\\'")}', '${channel.profileImageUrl ? channel.profileImageUrl.replace(/'/g, "\\'") : ''}', '${channel.category.replace(/'/g, "\\'")}')">Edytuj Kanał</button>
                         <button class="btn btn-info" onclick="togglePartnerStatus(${channel.id}, ${channel.is_partner ? 'true' : 'false'})">
                             ${channel.is_partner ? 'Usuń z Partnerów' : 'Ustaw jako Partnera'}
                         </button>
-                        <button class="btn btn-danger" onclick="confirmDeleteChannel(${channel.id}, '${channel.name.replace(/'/g, "\\'")}')">Usuń Kanał</button>
+                        <button class="btn btn-danger" onclick="showConfirmModal('Czy na pewno chcesz usunąć kanał &quot;${channel.name.replace(/'/g, "&quot;")}&quot; (ID: ${channel.id})? To jest nieodwracalne!', () => deleteChannel(${channel.id}))">Usuń Kanał</button>
+                    </div>
+                    <div class="channel-item-comments">
+                        <h5>Komentarze:</h5>
+                        ${channel.comments.length > 0 ? channel.comments.map(comment => `
+                            <div class="comment">
+                                <div class="comment-text">
+                                    <p>${comment.text}</p>
+                                    <p class="comment-author-date">Autor: ${comment.author} (${comment.date})</p>
+                                </div>
+                                <button class="btn btn-danger btn-sm comment-actions" onclick="showConfirmModal('Czy na pewno chcesz usunąć komentarz o ID ${comment.id}?', () => deleteComment(${comment.id}))">Usuń</button>
+                            </div>
+                        `).join('') : '<p>Brak komentarzy.</p>'}
                     </div>
                 </li>
             `).join('');
@@ -411,22 +622,16 @@
         }
 
         /**
-         * NEW FUNCTION: Toggles the partner status of a channel.
-         * @param {number} channelId The ID of the channel to toggle.
-         * @param {boolean} currentStatus The current partner status of the channel.
+         * Sends an admin boost request for a channel.
+         * @param {number} channelId The ID of the channel to boost.
          */
-        async function togglePartnerStatus(channelId, currentStatus) {
+        async function adminBoostChannel(channelId) {
             if (!adminToken) {
                 showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
                 return;
             }
-            const action = currentStatus ? "usunąć z partnerów" : "ustawić jako partnera";
-            if (!confirm(`Czy na pewno chcesz ${action} kanał o ID ${channelId}?`)) {
-                return;
-            }
-
             try {
-                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/toggle_partner`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/channels/${channelId}/admin_boost`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -440,37 +645,130 @@
                     loadAdminChannels(); // Reload the list to reflect changes
                 } else {
                     const errorData = await response.json();
-                    showNotification(errorData.error || 'Błąd podczas zmiany statusu partnera.', 'error');
+                    showNotification(errorData.error || 'Błąd podczas boostowania kanału przez administratora.', 'error');
                 }
             } catch (error) {
-                console.error('Błąd podczas przełączania statusu partnera:', error);
-                showNotification('Błąd połączenia z serwerem podczas zmiany statusu partnera.', 'error');
+                console.error('Błąd podczas admin boostowania kanału:', error);
+                showNotification('Błąd połączenia z serwerem podczas admin boostowania.', 'error');
             }
         }
 
-
         /**
-         * Confirms deletion with the user.
-         * @param {number} channelId The ID of the channel to delete.
-         * @param {string} channelName The name of the channel for confirmation message.
+         * Sends an admin unboost request for a channel.
+         * @param {number} channelId The ID of the channel to unboost.
          */
-        function confirmDeleteChannel(channelId, channelName) {
+        async function adminUnboostChannel(channelId) {
             if (!adminToken) {
                 showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
                 return;
             }
-            if (confirm(`Czy na pewno chcesz usunąć kanał "${channelName}" (ID: ${channelId})? To jest nieodwracalne!`)) {
-                deleteChannel(channelId);
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/channels/${channelId}/admin_unboost`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showNotification(data.message, 'success');
+                    loadAdminChannels(); // Reload the list to reflect changes
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas unboostowania kanału przez administratora.', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas admin unboostowania kanału:', error);
+                showNotification('Błąd połączenia z serwerem podczas admin unboostowania.', 'error');
             }
         }
 
+
         /**
-         * Sends a DELETE request to remove a channel.
-         * @param {number} channelId The ID of the channel to delete.
+         * Shows the edit channel modal and populates it with current channel data.
+         * @param {number} id Channel ID.
+         * @param {string} name Channel name.
+         * @param {string} description Channel description.
+         * @param {string} link Channel link.
+         * @param {string} profileImageUrl Channel profile image URL.
+         * @param {string} category Channel category.
          */
-        async function deleteChannel(channelId) {
+        function showEditChannelModal(id, name, description, link, profileImageUrl, category) {
+            document.getElementById('editChannelId').value = id;
+            document.getElementById('editChannelName').value = name;
+            document.getElementById('editChannelDescription').value = description;
+            document.getElementById('editChannelLink').value = link;
+            document.getElementById('editProfileImageUrl').value = profileImageUrl;
+            document.getElementById('editChannelCategory').value = category || 'Ogólne'; // Set default if null/empty
+            document.getElementById('editChannelModal').style.display = 'flex';
+        }
+
+        /**
+         * Hides the edit channel modal.
+         */
+        function hideEditChannelModal() {
+            document.getElementById('editChannelModal').style.display = 'none';
+        }
+
+        /**
+         * Submits the edited channel data to the backend.
+         */
+        async function submitEditChannel() {
+            if (!adminToken) {
+                showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
+                return;
+            }
+
+            const channelId = document.getElementById('editChannelId').value;
+            const name = document.getElementById('editChannelName').value.trim();
+            const description = document.getElementById('editChannelDescription').value.trim();
+            const link = document.getElementById('editChannelLink').value.trim();
+            const profileImageUrl = document.getElementById('editProfileImageUrl').value.trim();
+            const category = document.getElementById('editChannelCategory').value.trim();
+
+            if (!name || !description || !link) {
+                showNotification('Nazwa, opis i link są wymagane!', 'error');
+                return;
+            }
+
             try {
-                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}`, {
+                const response = await fetch(`${API_BASE_URL}/api/admin/channels/${channelId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ name, description, link, profileImageUrl, category })
+                });
+
+                if (response.ok) {
+                    showNotification('Kanał zaktualizowany pomyślnie!', 'success');
+                    hideEditChannelModal();
+                    loadAdminChannels(); // Reload list to show changes
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas aktualizacji kanału.', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas wysyłania aktualizacji kanału:', error);
+                showNotification('Błąd połączenia z serwerem podczas aktualizacji kanału.', 'error');
+            }
+        }
+
+
+        /**
+         * Deletes a comment from a channel.
+         * @param {number} commentId The ID of the comment to delete.
+         */
+        async function deleteComment(commentId) {
+            if (!adminToken) {
+                showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
+                return;
+            }
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/comments/${commentId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${adminToken}` // Include the token
@@ -478,18 +776,56 @@
                 });
 
                 if (response.ok) {
-                    showNotification(`Kanał o ID ${channelId} został usunięty.`, 'success');
+                    showNotification(`Komentarz o ID ${commentId} został usunięty.`, 'success');
                     loadAdminChannels(); // Reload the list after deletion
                 } else {
                     const errorData = await response.json();
-                    showNotification(errorData.error || `Błąd podczas usuwania kanału o ID ${channelId}`, 'error');
+                    showNotification(errorData.error || `Błąd podczas usuwania komentarza o ID ${commentId}`, 'error');
                 }
             }
             catch (error) {
-                console.error(`Błąd podczas usuwania kanału o ID ${channelId}:`, error);
-                showNotification('Błąd połączenia z serwerem podczas usuwania kanału.', 'error');
+                console.error(`Błąd podczas usuwania komentarza o ID ${commentId}:`, error);
+                showNotification('Błąd połączenia z serwerem podczas usuwania komentarza.', 'error');
             }
         }
+
+
+        /**
+         * Toggles the partner status of a channel.
+         * @param {number} channelId The ID of the channel to toggle.
+         * @param {boolean} currentStatus The current partner status of the channel.
+         */
+        async function togglePartnerStatus(channelId, currentStatus) {
+            if (!adminToken) {
+                showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
+                return;
+            }
+            const action = currentStatus ? "usunąć z partnerów" : "ustawić jako partnera";
+            showConfirmModal(`Czy na pewno chcesz ${action} kanał o ID ${channelId}?`, async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/toggle_partner`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${adminToken}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        showNotification(data.message, 'success');
+                        loadAdminChannels(); // Reload the list to reflect changes
+                    } else {
+                        const errorData = await response.json();
+                        showNotification(errorData.error || 'Błąd podczas zmiany statusu partnera.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Błąd podczas przełączania statusu partnera:', error);
+                    showNotification('Błąd połączenia z serwerem podczas zmiany statusu partnera.', 'error');
+                }
+            });
+        }
+
 
         /**
          * Confirms clearing all channels with the user.
@@ -499,9 +835,7 @@
                 showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
                 return;
             }
-            if (confirm('Jesteś pewien, że chcesz usunąć WSZYSTKIE kanały i komentarze? To jest nieodwracalne!')) {
-                clearAllChannels();
-            }
+            showConfirmModal('Jesteś pewien, że chcesz usunąć WSZYSTKIE kanały i komentarze? To jest NIEODWRACALNE!', clearAllChannels);
         }
 
         /**
