@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-                  <!-- Google tag (gtag.js) -->
+                    <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-6ZTY2M5G0L"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -168,20 +168,21 @@
             box-shadow: 0 0 10px rgba(45, 90, 45, 0.3);
         }
 
-        .sort-section {
+        .sort-filter-section {
             display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
             align-items: center;
-            gap: 10px;
+            gap: 15px; /* Spacing between elements */
             justify-content: center;
-            margin-top: 15px; /* Spacing between search and sort */
+            margin-top: 15px;
         }
 
-        .sort-section label {
+        .sort-filter-section label {
             font-weight: bold;
             color: #333;
         }
 
-        .sort-select {
+        .sort-select, .category-select {
             padding: 10px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
@@ -191,7 +192,7 @@
             transition: all 0.3s ease;
         }
 
-        .sort-select:focus {
+        .sort-select:focus, .category-select:focus {
             outline: none;
             border-color: #2d5a2d;
             box-shadow: 0 0 8px rgba(45, 90, 45, 0.3);
@@ -287,6 +288,14 @@
             margin-bottom: 15px;
         }
 
+        /* NEW: Styles for the actions container within channel header */
+        .channel-actions {
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically */
+            gap: 5px; /* Small gap between buttons */
+            margin-left: auto; /* Push to the right */
+        }
+
         .channel-avatar {
             width: 50px;
             height: 50px;
@@ -309,6 +318,10 @@
             object-fit: cover; /* Cover the avatar area */
         }
 
+        .channel-info {
+            flex-grow: 1; /* Allow info to take up available space */
+        }
+
         .channel-info h3 {
             font-size: 1.3em;
             margin-bottom: 5px;
@@ -321,6 +334,13 @@
             color: #777;
             margin-top: 5px;
         }
+        .channel-info .channel-category { /* Style for category text */
+            font-size: 0.85em;
+            color: #555;
+            margin-top: 3px;
+            font-weight: bold;
+        }
+
 
         /* Collapsible content */
         .collapsible-content {
@@ -636,9 +656,15 @@
                 flex-direction: column;
             }
 
-            .sort-section {
+            .sort-filter-section {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+            .sort-filter-section > div { /* For smaller screens, ensure dropdowns take full width */
+                width: 100%;
+            }
+            .sort-select, .category-select {
+                width: 100%;
             }
         }
 
@@ -736,8 +762,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            margin-left: 10px; /* Space from other elements */
-            margin-top: 5px;
+            margin-top: 5px; /* Added margin for vertical spacing */
+            width: 100%; /* Make buttons full width in their container */
         }
 
         .btn-boost:hover:not(:disabled) {
@@ -764,8 +790,8 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            margin-left: 10px;
-            margin-top: 5px;
+            margin-top: 5px; /* Added margin for vertical spacing */
+            width: 100%; /* Make buttons full width in their container */
         }
 
         .btn-unboost:hover:not(:disabled) {
@@ -779,6 +805,79 @@
             opacity: 0.7;
             box-shadow: none;
             transform: none;
+        }
+
+        /* Modal Styles (copied from admin.html for consistency) */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1001; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto; /* Center modal */
+            padding: 30px;
+            border: 1px solid #888;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px; /* Slightly smaller for user-facing modals */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+            animation-name: animatetop;
+            animation-duration: 0.4s;
+            text-align: left;
+        }
+
+        /* Add Animation */
+        @keyframes animatetop {
+            from {top: -300px; opacity: 0}
+            to {top: 0; opacity: 1}
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: -20px;
+            margin-right: -10px;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-buttons {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .modal-buttons button {
+            margin-left: 10px;
+        }
+
+        /* Style for Category display on card */
+        .channel-info .channel-category {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+            background-color: #e9ecef;
+            padding: 3px 8px;
+            border-radius: 5px;
+            display: inline-block;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -796,6 +895,7 @@
             <p>Witaj w Whapineo! Poniżej znajdziesz krótkie instrukcje, jak w pełni wykorzystać możliwości tej platformy:</p>
             <ul>
                 <li><strong>Szukaj kanałów:</strong> Użyj pola wyszukiwania, aby znaleźć interesujące kanały WhatsApp po nazwie lub opisie.</li>
+                <li><strong>Filtruj według kategorii:</strong> Wybierz kategorię z rozwijanej listy, aby zobaczyć kanały tylko z danej dziedziny.</li>
                 <li><strong>Dodaj kanał:</strong> Jeśli znasz kanał, którego nie ma na liście, użyj sekcji "Dodaj nowy kanał" i wklej link do niego.</li>
                 <li><strong>Oceniaj kanały:</strong> Kliknij na gwiazdki w karcie kanału, aby wystawić ocenę od 1 do 5. Możesz ocenić każdy kanał raz na 24 godziny.</li>
                 <li><strong>Dodawaj komentarze:</strong> Podziel się swoją opinią na temat kanału, pisząc komentarz w polu tekstowym i klikając "Dodaj komentarz".</li>
@@ -806,7 +906,7 @@
             <p>Mamy nadzieję, że Whapineo pomoże Ci znaleźć wspaniałe społeczności!</p>
         </div>
 
-        <!-- NEW: Partner Channels Section -->
+        <!-- Partner Channels Section -->
         <div id="partnerChannelsSection">
             <h2>Kanały Partnerskie ✨</h2>
             <div id="partnerChannelsGrid" class="partner-channels-grid">
@@ -822,17 +922,33 @@
                 <input type="text" class="search-input" id="searchInput" placeholder="Szukaj kanałów WhatsApp...">
                 <button class="btn btn-primary" onclick="searchChannels()">Szukaj</button>
             </div>
-            <div class="sort-section">
-                <label for="sortSelect">Sortuj według:</label>
-                <select id="sortSelect" class="sort-select" onchange="sortChannels()">
-                    <option value="default" selected>Wg. najnowszych boostów</option>
-                    <option value="rating_desc">Najwyżej oceniane</option>
-                    <option value="rating_asc">Najniżej oceniane</option>
-                    <option value="ratings_count_desc">Najwięcej ocen</option>
-                    <option value="ratings_count_asc">Najmniej ocen</option>
-                    <option value="followers_desc">Najwięcej obserwujących</option>
-                    <option value="followers_asc">Najmniej obserwujących</option>
-                </select>
+            <div class="sort-filter-section">
+                <div>
+                    <label for="sortSelect">Sortuj według:</label>
+                    <select id="sortSelect" class="sort-select" onchange="applyFiltersAndSorting()">
+                        <option value="default" selected>Wg. najnowszych boostów</option>
+                        <option value="rating_desc">Najwyżej oceniane</option>
+                        <option value="rating_asc">Najniżej oceniane</option>
+                        <option value="ratings_count_desc">Najwięcej ocen</option>
+                        <option value="ratings_count_asc">Najmniej ocen</option>
+                        <option value="followers_desc">Najwięcej obserwujących</option>
+                        <option value="followers_asc">Najmniej obserwujących</option>
+                        <option value="comments_count_desc">Najwięcej komentarzy</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="categorySelect">Kategoria:</label>
+                    <select id="categorySelect" class="category-select" onchange="applyFiltersAndSorting()">
+                        <option value="all">Wszystkie</option>
+                        <option value="Ogólne">Ogólne</option>
+                        <option value="Wiadomości">Wiadomości</option>
+                        <option value="Sport">Sport</option>
+                        <option value="Technologia">Technologia</option>
+                        <option value="Rozrywka">Rozrywka</option>
+                        <option value="Edukacja">Edukacja</option>
+                        <!-- Możesz dodać więcej kategorii tutaj -->
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -841,6 +957,18 @@
             <div class="form-group">
                 <label for="channelLink">Link do kanału:</label>
                 <input type="url" class="form-input" id="channelLink" placeholder="https://whatsapp.com/channel/..." required>
+            </div>
+            <div class="form-group">
+                <label for="addChannelCategory">Kategoria:</label>
+                <select id="addChannelCategory" class="form-input">
+                    <option value="Ogólne">Ogólne</option>
+                    <option value="Wiadomości">Wiadomości</option>
+                    <option value="Sport">Sport</option>
+                    <option value="Technologia">Technologia</option>
+                    <option value="Rozrywka">Rozrywka</option>
+                    <option value="Edukacja">Edukacja</option>
+                    <!-- Dodaj te same kategorie co w filtrze -->
+                </select>
             </div>
             <button class="btn btn-success" onclick="addChannel()">Dodaj kanał</button>
         </div>
@@ -858,10 +986,17 @@
 
     <div id="notification" class="notification"></div>
 
-    <footer class="footer">
-        <p>Whapineo to niezależna platforma stworzona, aby pomóc Ci odkrywać i oceniać kanały WhatsApp.</p>
-        <p><strong>Niniejsza strona nie jest w żaden sposób powiązana, sponsorowana ani wspierana przez WhatsApp Inc.</strong></p>
-    </footer>
+    <!-- Custom Confirmation Modal (for user actions) -->
+    <div id="confirmModalUser" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="hideConfirmModalUser()">&times;</span>
+            <p id="confirmModalUserMessage"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" id="confirmModalUserYesBtn">Tak</button>
+                <button class="btn btn-danger" onclick="hideConfirmModalUser()">Anuluj</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Define the base URL for your Render.com backend API
@@ -957,7 +1092,7 @@
             return (currentTime - lastBoostedTime) >= FIFTEEN_MINUTES_IN_MILLISECONDS;
         }
 
-        // --- NEW UNBOOST LOGIC ---
+        // --- UNBOOST LOGIC ---
         const UNBOOST_COOLDOWN_IN_MILLISECONDS = 15 * 60 * 1000; // 15 minutes cooldown for unboost
 
         /**
@@ -1000,7 +1135,7 @@
             const currentTime = Date.now();
             return (currentTime - lastUnboostedTime) >= UNBOOST_COOLDOWN_IN_MILLISECONDS;
         }
-        // --- END OF NEW UNBOOST LOGIC ---
+        // --- END OF UNBOOST LOGIC ---
 
         /**
          * Displays a temporary notification message on the screen.
@@ -1018,6 +1153,32 @@
                 notification.classList.remove('show');
             }, 3000);
         }
+
+        /**
+         * Shows a custom confirmation modal for user actions.
+         * @param {string} message The message to display in the modal.
+         * @param {function} callback The function to execute if the user confirms.
+         */
+        function showConfirmModalUser(message, callback) {
+            const modal = document.getElementById('confirmModalUser');
+            const messageElement = document.getElementById('confirmModalUserMessage');
+            const yesBtn = document.getElementById('confirmModalUserYesBtn');
+
+            messageElement.textContent = message;
+            yesBtn.onclick = () => {
+                hideConfirmModalUser();
+                callback();
+            };
+            modal.style.display = 'flex'; // Use flex to center
+        }
+
+        /**
+         * Hides the custom confirmation modal for user actions.
+         */
+        function hideConfirmModalUser() {
+            document.getElementById('confirmModalUser').style.display = 'none';
+        }
+
 
         /**
          * Fetches channels from the backend API, sorts them, and renders them.
@@ -1039,7 +1200,7 @@
                     applyFiltersAndSorting(); // Apply initial filter and sort
                     // Set the default sort option in the UI (but backend already handles primary sort)
                     document.getElementById('sortSelect').value = 'default'; 
-                    sortChannels(); // Apply initial sort
+                    document.getElementById('categorySelect').value = 'all';
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas ładowania kanałów', 'error');
@@ -1053,7 +1214,7 @@
         }
 
         /**
-         * NEW FUNCTION: Fetches and renders partner channels.
+         * Fetches and renders partner channels.
          */
         async function loadPartnerChannels() {
             const partnerContainer = document.getElementById('partnerChannelsGrid');
@@ -1088,7 +1249,7 @@
         }
 
         /**
-         * NEW FUNCTION: Renders the list of partner channels into the DOM.
+         * Renders the list of partner channels into the DOM.
          * @param {Array} partnerChannels The array of partner channel objects to display.
          */
         function renderPartnerChannels(partnerChannels) {
@@ -1121,9 +1282,12 @@
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' obserwujących' : 'Brak danych o obserwujących'}</p>
+                            <span class="channel-category">${channel.category || 'Ogólne'}</span>
                         </div>
-                        <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boostuj</button>
-                        <button class="btn-boost btn-unboost" onclick="handleUnboostClick(${channel.id})" ${unboostButtonDisabled}>Unboostuj</button>
+                        <div class="channel-actions"> <!-- Wrapper for buttons -->
+                            <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boostuj</button>
+                            <button class="btn-boost btn-unboost" onclick="handleUnboostClick(${channel.id})" ${unboostButtonDisabled}>Unboostuj</button>
+                        </div>
                     </div>
 
                     <div class="rating-section">
@@ -1201,8 +1365,8 @@
                 const starsClass = canRate ? '' : 'disabled';
                 const canBoost = canBoostChannel(channel.id);
                 const boostButtonDisabled = !canBoost ? 'disabled' : '';
-                const canUnboost = canUnboostChannel(channel.id); // NEW: Check unboost cooldown
-                const unboostButtonDisabled = !canUnboost ? 'disabled' : ''; // NEW: Disable state for unboost
+                const canUnboost = canUnboostChannel(channel.id); // Check unboost cooldown
+                const unboostButtonDisabled = !canUnboost ? 'disabled' : ''; // Disable state for unboost
 
                 // Poprawka dla błędu URI malformed: Użycie Array.from do bezpiecznego pobrania pierwszej litery
                 const firstChar = (channel.name && channel.name.length > 0) ? Array.from(channel.name)[0] : '';
@@ -1217,9 +1381,12 @@
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' obserwujących' : 'Brak danych o obserwujących'}</p>
+                            <span class="channel-category">${channel.category || 'Ogólne'}</span>
                         </div>
-                        <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boostuj</button>
-                        <button class="btn-boost btn-unboost" onclick="handleUnboostClick(${channel.id})" ${unboostButtonDisabled}>Unboostuj</button>
+                        <div class="channel-actions"> <!-- Wrapper for buttons -->
+                            <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boostuj</button>
+                            <button class="btn-boost btn-unboost" onclick="handleUnboostClick(${channel.id})" ${unboostButtonDisabled}>Unboostuj</button>
+                        </div>
                     </div>
 
                     <div class="rating-section">
@@ -1354,29 +1521,31 @@
                 return; // Stop if already rated today
             }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/rate`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ rating: rating })
-                });
+            showConfirmModalUser(`Czy na pewno chcesz ocenić ten kanał na ${rating} gwiazdek?`, async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/rate`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ rating: rating })
+                    });
 
-                if (response.ok) {
-                    showNotification('Dziękujemy za ocenę!');
-                    // Update localStorage after successful rating
-                    const ratedChannels = getRatedChannelsFromLocalStorage();
-                    ratedChannels[channelId] = Date.now(); // Store current timestamp
-                    setRatedChannelsToLocalStorage(ratedChannels);
-                    loadChannels(); // Reload channels to update UI (disable stars)
-                    loadPartnerChannels(); // Also reload partner channels in case it was one of them
-                } else {
-                    const errorData = await response.json();
-                    showNotification(errorData.error || 'Błąd podczas dodawania oceny', 'error');
+                    if (response.ok) {
+                        showNotification('Dziękujemy za ocenę!');
+                        // Update localStorage after successful rating
+                        const ratedChannels = getRatedChannelsFromLocalStorage();
+                        ratedChannels[channelId] = Date.now(); // Store current timestamp
+                        setRatedChannelsToLocalStorage(ratedChannels);
+                        loadChannels(); // Reload channels to update UI (disable stars)
+                        loadPartnerChannels(); // Also reload partner channels in case it was one of them
+                    } else {
+                        const errorData = await response.json();
+                        showNotification(errorData.error || 'Błąd podczas dodawania oceny', 'error');
+                    }
+                } catch (error) {
+                    console.error('Błąd podczas wysyłania oceny:', error);
+                    showNotification('Błąd połączenia z serwerem podczas oceniania.', 'error');
                 }
-            } catch (error) {
-                console.error('Błąd podczas wysyłania oceny:', error);
-                showNotification('Błąd połączenia z serwerem podczas oceniania.', 'error');
-            }
+            });
         }
 
         /**
@@ -1433,26 +1602,28 @@
                 return;
             }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/comments`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ text: text, author: "Użytkownik" })
-                });
+            showConfirmModalUser('Czy na pewno chcesz dodać ten komentarz?', async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/comments`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ text: text, author: "Użytkownik" })
+                    });
 
-                if (response.ok) {
-                    textarea.value = '';
-                    showNotification('Komentarz został dodany!');
-                    loadChannels(); // Reload channels to get updated comments
-                    loadPartnerChannels(); // Also reload partner channels in case it was one of them
-                } else {
-                    const errorData = await response.json();
-                    showNotification(errorData.error || 'Błąd podczas dodawania komentarza', 'error');
+                    if (response.ok) {
+                        textarea.value = '';
+                        showNotification('Komentarz został dodany!');
+                        loadChannels(); // Reload channels to get updated comments
+                        loadPartnerChannels(); // Also reload partner channels in case it was one of them
+                    } else {
+                        const errorData = await response.json();
+                        showNotification(errorData.error || 'Błąd podczas dodawania komentarza', 'error');
+                    }
+                } catch (error) {
+                    console.error('Błąd podczas dodawania komentarza:', error);
+                    showNotification('Błąd połączenia z serwerem podczas dodawania komentarza.', 'error');
                 }
-            } catch (error) {
-                console.error('Błąd podczas dodawania komentarza:', error);
-                showNotification('Błąd połączenia z serwerem podczas dodawania komentarza.', 'error');
-            }
+            });
         }
 
         /**
@@ -1460,6 +1631,7 @@
          */
         async function addChannel() {
             const link = document.getElementById('channelLink').value.trim();
+            const category = document.getElementById('addChannelCategory').value;
 
             if (!link) {
                 showNotification('Pole \'link\' jest wymagane.', 'error');
@@ -1467,29 +1639,32 @@
             }
 
             const newChannelData = {
-                link: link
+                link: link,
+                category: category
             };
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/channels`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(newChannelData)
-                });
+            showConfirmModalUser('Czy na pewno chcesz dodać ten kanał?', async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/channels`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(newChannelData)
+                    });
 
-                if (response.ok) {
-                    document.getElementById('channelLink').value = '';
-                    showNotification('Kanał został dodany!');
-                    loadChannels(); // Reload channels to show new one
-                    loadPartnerChannels(); // Also reload partner channels if any
-                } else {
-                    const errorData = await response.json();
-                    showNotification(errorData.error || 'Błąd podczas dodawania kanału', 'error');
+                    if (response.ok) {
+                        document.getElementById('channelLink').value = '';
+                        showNotification('Kanał został dodany!');
+                        loadChannels(); // Reload channels to show new one
+                        loadPartnerChannels(); // Also reload partner channels if any
+                    } else {
+                        const errorData = await response.json();
+                        showNotification(errorData.error || 'Błąd podczas dodawania kanału', 'error');
+                    }
+                } catch (error) {
+                    console.error('Błąd podczas dodawania kanału:', error);
+                    showNotification('Błąd połączenia z serwerem podczas dodawania kanału.', 'error');
                 }
-            } catch (error) {
-                console.error('Błąd podczas dodawania kanału:', error);
-                showNotification('Błąd połączenia z serwerem podczas dodawania kanału.', 'error');
-            }
+            });
         }
 
         /**
@@ -1503,31 +1678,33 @@
                 return;
             }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/boost`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({}) // Send empty body if backend doesn't require specific data
-                });
+            showConfirmModalUser('Czy na pewno chcesz zboostować ten kanał?', async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/boost`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({}) // Send empty body if backend doesn't require specific data
+                    });
 
-                if (response.ok) {
-                    showNotification('Kanał został zboostowany!');
-                    // Update localStorage after successful boost (client-side cooldown)
-                    const boostedChannels = getBoostedChannelsFromLocalStorage();
-                    boostedChannels[channelId] = Date.now();
-                    setBoostedChannelsToLocalStorage(boostedChannels);
+                    if (response.ok) {
+                        showNotification('Kanał został zboostowany!');
+                        // Update localStorage after successful boost (client-side cooldown)
+                        const boostedChannels = getBoostedChannelsFromLocalStorage();
+                        boostedChannels[channelId] = Date.now();
+                        setBoostedChannelsToLocalStorage(boostedChannels);
 
-                    // Reload channels to get the new global order from backend
-                    loadChannels();
-                    loadPartnerChannels(); // Also reload partner channels in case it was one of them
-                } else {
-                    const errorData = await response.json();
-                    showNotification(errorData.error || 'Błąd podczas boostowania kanału', 'error');
+                        // Reload channels to get the new global order from backend
+                        loadChannels();
+                        loadPartnerChannels(); // Also reload partner channels in case it was one of them
+                    } else {
+                        const errorData = await response.json();
+                        showNotification(errorData.error || 'Błąd podczas boostowania kanału', 'error');
+                    }
+                } catch (error) {
+                    console.error('Błąd podczas wysyłania boosta:', error);
+                    showNotification('Błąd połączenia z serwerem podczas boostowania.', 'error');
                 }
-            } catch (error) {
-                console.error('Błąd podczas wysyłania boosta:', error);
-                showNotification('Błąd połączenia z serwerem podczas boostowania.', 'error');
-            }
+            });
         }
 
         /**
@@ -1541,31 +1718,33 @@
                 return;
             }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/unboost`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({})
-                });
+            showConfirmModalUser('Czy na pewno chcesz unboostować ten kanał? Zostanie przeniesiony na dół listy.', async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/unboost`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({})
+                    });
 
-                if (response.ok) {
-                    showNotification('Kanał został przeniesiony na dół listy.');
-                    // Update localStorage for the unboost cooldown
-                    const unboostedChannels = getUnboostedChannelsFromLocalStorage();
-                    unboostedChannels[channelId] = Date.now();
-                    setUnboostedChannelsToLocalStorage(unboostedChannels);
+                    if (response.ok) {
+                        showNotification('Kanał został przeniesiony na dół listy.');
+                        // Update localStorage for the unboost cooldown
+                        const unboostedChannels = getUnboostedChannelsFromLocalStorage();
+                        unboostedChannels[channelId] = Date.now();
+                        setUnboostedChannelsToLocalStorage(unboostedChannels);
 
-                    // Reload channels to get the new global order from backend
-                    loadChannels();
-                    loadPartnerChannels(); // Also reload partner channels in case it was one of them
-                } else {
-                    const errorData = await response.json();
-                    showNotification(errorData.error || 'Błąd podczas unboostowania kanału', 'error');
+                        // Reload channels to get the new global order from backend
+                        loadChannels();
+                        loadPartnerChannels(); // Also reload partner channels in case it was one of them
+                    } else {
+                        const errorData = await response.json();
+                        showNotification(errorData.error || 'Błąd podczas unboostowania kanału', 'error');
+                    }
+                } catch (error) {
+                    console.error('Błąd podczas wysyłania unboosta:', error);
+                    showNotification('Błąd połączenia z serwerem podczas unboostowania.', 'error');
                 }
-            } catch (error) {
-                console.error('Błąd podczas wysyłania unboosta:', error);
-                showNotification('Błąd połączenia z serwerem podczas unboostowania.', 'error');
-            }
+            });
         }
 
 
@@ -1585,11 +1764,17 @@
                 );
             }
 
+            // Apply category filter
+            const selectedCategory = document.getElementById('categorySelect').value;
+            if (selectedCategory !== 'all') {
+                tempChannels = tempChannels.filter(channel =>
+                    (channel.category || 'Ogólne').toLowerCase() === selectedCategory.toLowerCase()
+                );
+            }
+
+
             // Apply sorting
             const sortOption = document.getElementById('sortSelect').value;
-            // Note: Primary sorting by 'last_boosted' is handled by the backend (get_channels SQL query).
-            // This client-side sort will apply on top of that, or if 'default' is chosen,
-            // it will simply rely on the order returned by the backend.
             switch (sortOption) {
                 case 'rating_desc':
                     tempChannels.sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -1609,10 +1794,13 @@
                 case 'followers_asc':
                     tempChannels.sort((a, b) => (a.followerCount || 0) - (b.followerCount || 0));
                     break;
+                case 'comments_count_desc': // NEW: Sort by comments count
+                    tempChannels.sort((a, b) => (b.comments ? b.comments.length : 0) - (a.comments ? a.comments.length : 0));
+                    break;
                 case 'default':
                 default:
                     // For 'default', we rely on the backend's primary sort (last_boosted DESC).
-                    // If a search term is present, we filter but maintain the backend's order among filtered items.
+                    // If a search term or category is present, we filter but maintain the backend's order among filtered items.
                     break;
             }
 
@@ -1674,7 +1862,7 @@
 
         // Initialization logic: Load channels when the DOM is fully loaded
         document.addEventListener('DOMContentLoaded', function() {
-            loadPartnerChannels(); // NEW: Load partner channels first
+            loadPartnerChannels(); // Load partner channels first
             loadChannels(); // Load regular channels
             
             // Add enter key listener for search input
