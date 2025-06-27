@@ -16,14 +16,14 @@ import re
 load_dotenv()
 
 app = Flask(__name__)
-# Initialize CORS - allows requests from all origins (*)
+# Initialize CORS - allows requests from all origins (*)\
 CORS(app)
 
 # Database connection details
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# --- Admin Panel Passwords (from Environment Variables) ---
-# This remains separate for admin panel authentication.
+# --- Admin Panel Passwords (from Environment Variables) ---\
+# This remains separate for admin panel authentication.\
 ADMIN_PASS1 = os.environ.get('ADMIN_PASS1', 'default_admin123') # Ustaw to na Render.com
 ADMIN_PASS2 = os.environ.get('ADMIN_PASS2', 'default_superadmin456') # Ustaw to na Render.com
 ADMIN_AUTH_TOKEN = os.environ.get('ADMIN_AUTH_TOKEN', 'very_secret_admin_token') # Token do autoryzacji operacji
@@ -202,7 +202,7 @@ def fetch_channel_details_from_whatsapp_page(url):
 
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # --- Próba znalezienia nazwy kanału ---
+        # --- Próba znalezienia nazwy kanału ---\
         name_tag = soup.find('meta', property='og:title')
         if name_tag and name_tag.get('content'):
             channel_name = name_tag['content'].strip()
@@ -215,7 +215,7 @@ def fetch_channel_details_from_whatsapp_page(url):
             if not channel_name:
                 channel_name = "Kanał WhatsApp" # Fallback, jeśli nie znaleziono nazwy
 
-        # --- Próba znalezienia opisu kanału ---
+        # --- Próba znalezienia opisu kanału ---\
         description_tag = soup.find('meta', property='og:description')
         if description_tag and description_tag.get('content'):
             channel_description = description_tag['content'].strip()
@@ -229,8 +229,8 @@ def fetch_channel_details_from_whatsapp_page(url):
         if not channel_description:
             channel_description = "Brak dostępnego opisu." # Domyślny opis
 
-        # --- Próba znalezienia liczby obserwujących ---
-        # Jest to bardzo zawodne ze względu na dynamiczną zawartość i środki antyskapingowe.
+        # --- Próba znalezienia liczby obserwujących ---\
+        # Jest to bardzo zawodne ze względu na dynamiczną zawartość i środki antyskapingowe.\
         follower_element = soup.find(text=lambda text: text and ("obserwujący" in text.lower() or "followers" in text.lower()))
         if follower_element:
             try:
@@ -254,7 +254,7 @@ def fetch_channel_details_from_whatsapp_page(url):
                 print(f"DEBUG: Nie można było sparsować liczby obserwujących z: '{text_with_followers}'")
                 pass # Zachowaj domyślne 0
 
-        # --- Próba znalezienia adresu URL obrazu profilowego ---
+        # --- Próba znalezienia adresu URL obrazu profilowego ---\
         image_tag = soup.find('meta', property='og:image')
         if image_tag and image_tag.get('content'):
             profile_image_url = image_tag['content'].strip()
@@ -453,7 +453,7 @@ def add_channel():
         if conn:
             conn.close()
 
-# --- Admin API Endpoints (pozostają zabezpieczone tokenem) ---
+# --- Admin API Endpoints (pozostają zabezpieczone tokenem) ---\
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
     """Uwierzytelnia administratorów i zwraca token."""
@@ -468,6 +468,58 @@ def admin_login():
         return jsonify({"message": "Pomyślne logowanie", "token": ADMIN_AUTH_TOKEN}), 200
     else:
         return jsonify({"error": "Nieprawidłowe hasła administratora."}), 401
+
+@app.route('/api/admin/channels', methods=['GET'])
+def get_admin_channels():
+    """
+    Pobiera wszystkie kanały z bazy danych, w tym status 'is_partner',
+    dostępne tylko dla administratora.
+    """
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        # Pobierz WSZYSTKIE kanały dla panelu admina
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, is_partner FROM channels ORDER BY created_at DESC;")
+        channels_data = cur.fetchall()
+
+        channels_list = []
+        for channel in channels_data:
+            channel_id = channel[0]
+            cur.execute("SELECT author, text, created_at FROM comments WHERE channel_id = %s ORDER BY created_at DESC;", (channel_id,))
+            comments_data = cur.fetchall()
+            comments_list = [{
+                'author': c[0],
+                'text': c[1],
+                'date': c[2].isoformat().split('T')[0]
+            } for c in comments_data]
+
+            channels_list.append({
+                'id': channel_id,
+                'name': channel[1],
+                'description': channel[2],
+                'link': channel[3],
+                'rating': channel[4] if channel[4] is not None else 0.0,
+                'ratingsCount': channel[5] if channel[5] is not None else 0,
+                'followerCount': channel[6] if channel[6] is not None else 0,
+                'profileImageUrl': channel[7],
+                'is_partner': channel[8], # Dodano status is_partner
+                'comments': comments_list
+            })
+        return jsonify(channels_list)
+    except Exception as e:
+        print(f"ERROR: Błąd podczas pobierania kanałów dla administratora: {e}")
+        return jsonify({"error": "Błąd podczas ładowania kanałów dla administratora"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 
 @app.route('/api/channels/<int:channel_id>', methods=['DELETE'])
 def delete_channel(channel_id):
@@ -650,7 +702,7 @@ def unboost_channel(channel_id):
         cur = conn.cursor()
 
         # Update the last_boosted timestamp to a very old date (Unix Epoch)
-        # This will push it to the end of the DESC NULLS LAST sort.
+        # This will push it to the end of the DESC NULLS LAST sort.\
         unboost_timestamp = datetime(1970, 1, 1)
         cur.execute(
             "UPDATE channels SET last_boosted = %s WHERE id = %s RETURNING name;",
