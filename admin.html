@@ -118,6 +118,16 @@
             box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
         }
 
+        .btn-info { /* New button style for "Toggle Partner" */
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+
         .channel-list {
             list-style: none;
             padding: 0;
@@ -126,6 +136,7 @@
 
         .channel-item {
             display: flex;
+            flex-wrap: wrap; /* Pozwól na zawijanie elementów */
             justify-content: space-between;
             align-items: center;
             padding: 15px;
@@ -143,7 +154,27 @@
         .channel-item-info {
             flex-grow: 1;
             text-align: left;
+            margin-bottom: 10px; /* Dodany margines dla małych ekranów */
         }
+        
+        .channel-item-actions {
+            display: flex;
+            flex-direction: column; /* Przyciski w kolumnie na małych ekranach */
+            gap: 10px;
+            align-items: flex-end; /* Wyrównaj przyciski do prawej na dużych ekranach */
+            width: 100%; /* Na małych ekranach zajmij całą szerokość */
+        }
+        
+        @media (min-width: 768px) { /* Na większych ekranach zmień układ na wiersz */
+            .channel-item-info {
+                margin-bottom: 0;
+            }
+            .channel-item-actions {
+                flex-direction: row;
+                width: auto;
+            }
+        }
+
 
         .channel-item-info h4 {
             margin: 0;
@@ -326,16 +357,19 @@
                 </div>
             `;
             try {
-                // Ta lista kanałów NIE WYMAGA tokena admina, bo jest to ogólne pobieranie danych.
-                // Token będzie potrzebny do operacji usuwania.
-                const response = await fetch(`${API_BASE_URL}/api/channels`);
+                // Ta lista kanałów WYMAGA teraz tokena admina, aby pobrać pełne dane (w tym is_partner)
+                const response = await fetch(`${API_BASE_URL}/api/admin/channels`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}` // Include the token
+                    }
+                });
                 if (response.ok) {
                     const channels = await response.json();
                     renderAdminChannels(channels);
                 } else {
                     const errorData = await response.json();
                     showNotification(errorData.error || 'Błąd podczas ładowania kanałów do zarządzania', 'error');
-                    channelsAdminList.innerHTML = '<p style="color: #e74c3c;">Nie udało się załadować kanałów do zarządzania.</p>';
+                    channelsAdminList.innerHTML = '<p style="color: #e74c3c;">Nie udało się załadować kanałów do zarządzania. Upewnij się, że jesteś zalogowany.</p>';
                 }
             } catch (error) {
                 console.error('Błąd podczas ładowania kanałów do zarządzania:', error);
@@ -345,7 +379,7 @@
         }
 
         /**
-         * Renders channels in the admin panel with delete buttons.
+         * Renders channels in the admin panel with delete buttons and partner toggle.
          * @param {Array} channels The array of channel objects to display.
          */
         function renderAdminChannels(channels) {
@@ -358,18 +392,62 @@
             const listHTML = channels.map(channel => `
                 <li class="channel-item">
                     <div class="channel-item-info">
-                        <h4>${channel.name}</h4>
+                        <h4>${channel.name} (ID: ${channel.id})</h4>
                         <p>${channel.description}</p>
                         <p>Link: <a href="${channel.link}" target="_blank">${channel.link}</a></p>
                         <p>Obserwujących: ${channel.followerCount !== undefined ? channel.followerCount : 0}</p>
                         <p>Ocena: ${channel.rating.toFixed(1)}/5 (${channel.ratingsCount} ocen)</p>
-                        <p>ID: ${channel.id}</p>
+                        <p>Partner: <strong>${channel.is_partner ? 'TAK' : 'NIE'}</strong></p>
                     </div>
-                    <button class="btn btn-danger" onclick="confirmDeleteChannel(${channel.id}, '${channel.name.replace(/'/g, "\\'")}')">Usuń</button>
+                    <div class="channel-item-actions">
+                        <button class="btn btn-info" onclick="togglePartnerStatus(${channel.id}, ${channel.is_partner ? 'true' : 'false'})">
+                            ${channel.is_partner ? 'Usuń z Partnerów' : 'Ustaw jako Partnera'}
+                        </button>
+                        <button class="btn btn-danger" onclick="confirmDeleteChannel(${channel.id}, '${channel.name.replace(/'/g, "\\'")}')">Usuń Kanał</button>
+                    </div>
                 </li>
             `).join('');
             channelsAdminList.innerHTML = `<ul class="channel-list">${listHTML}</ul>`;
         }
+
+        /**
+         * NEW FUNCTION: Toggles the partner status of a channel.
+         * @param {number} channelId The ID of the channel to toggle.
+         * @param {boolean} currentStatus The current partner status of the channel.
+         */
+        async function togglePartnerStatus(channelId, currentStatus) {
+            if (!adminToken) {
+                showNotification('Błąd autoryzacji: Brak tokena administratora. Zaloguj się ponownie.', 'error');
+                return;
+            }
+            const action = currentStatus ? "usunąć z partnerów" : "ustawić jako partnera";
+            if (!confirm(`Czy na pewno chcesz ${action} kanał o ID ${channelId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/channels/${channelId}/toggle_partner`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showNotification(data.message, 'success');
+                    loadAdminChannels(); // Reload the list to reflect changes
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Błąd podczas zmiany statusu partnera.', 'error');
+                }
+            } catch (error) {
+                console.error('Błąd podczas przełączania statusu partnera:', error);
+                showNotification('Błąd połączenia z serwerem podczas zmiany statusu partnera.', 'error');
+            }
+        }
+
 
         /**
          * Confirms deletion with the user.
