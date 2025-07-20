@@ -83,7 +83,7 @@ def initialize_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_boosted TIMESTAMP DEFAULT NULL,
                 is_partner BOOLEAN DEFAULT FALSE, -- Kolumna: czy kanał jest partnerem
-                category VARCHAR(255) DEFAULT 'Ogólne' -- NOWA KOLUMNA: kategoria kanału
+                category VARCHAR(255) DEFAULT 'General' -- NEW COLUMN: channel category
             );
         """)
         conn.commit() # Commit the table creation immediately
@@ -128,7 +128,7 @@ def initialize_db():
         # Dodaj kolumnę category, jeśli nie istnieje
         try:
             cur.execute("""
-                ALTER TABLE channels ADD COLUMN IF NOT EXISTS category VARCHAR(255) DEFAULT 'Ogólne';
+                ALTER TABLE channels ADD COLUMN IF NOT EXISTS category VARCHAR(255) DEFAULT 'General';
             """)
             conn.commit()
             print("INFO: Kolumna 'category' w tabeli 'channels' została sprawdzona/dodana pomyślnie.")
@@ -408,8 +408,8 @@ def add_channel():
     frontend_name = data.get('name')
     frontend_description = data.get('description')
     frontend_profile_image_url = data.get('profileImageUrl')
-    # Nowa: frontend może przesłać kategorię
-    frontend_category = data.get('category', 'Ogólne')
+    # New: frontend may send category
+    frontend_category = data.get('category', 'General')
 
 
     if not link:
@@ -432,13 +432,13 @@ def add_channel():
     description = scraped_data['description'] if scraped_data and scraped_data['description'] else frontend_description # Użyj scraped, fallback do frontend
     follower_count = scraped_data['follower_count'] if scraped_data else 0
     profile_image_url = scraped_data['profile_image_url'] if scraped_data and scraped_data['profile_image_url'] else frontend_profile_image_url
-    category = frontend_category # Użyj kategorii z frontendu, jeśli jest, w przeciwnym razie domyślna
+    category = frontend_category # Use category from frontend, if available, otherwise default
 
     # Ostateczne fallbacki, jeśli scraping i frontend nie dostarczyły danych
     if not name:
         name = parsed_url.path.strip('/').split('/')[-1] # Fallback to ID if scraping/frontend name fails
     if not description:
-        description = "Brak dostępnego opisu."
+        description = "No description available."
     
     conn = None
     cur = None
@@ -559,7 +559,7 @@ def update_channel(channel_id):
     description = data.get('description')
     link = data.get('link')
     profile_image_url = data.get('profileImageUrl')
-    category = data.get('category', 'Ogólne') # Użyj domyślnej, jeśli nie podana
+    category = data.get('category', 'General') # Use default if not provided
 
     if not all([name, description, link]):
         return jsonify({"error": "Wszystkie pola (nazwa, opis, link) są wymagane."}), 400
