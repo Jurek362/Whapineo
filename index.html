@@ -334,7 +334,7 @@
             color: #777;
             margin-top: 5px;
         }
-        .channel-info .channel-category { /* Style for category text */
+        .channel-info .channel-country { /* Style for country text */
             font-size: 0.85em;
             color: #555;
             margin-top: 3px;
@@ -868,8 +868,8 @@
             margin-left: 10px;
         }
 
-        /* Style for Category display on card */
-        .channel-info .channel-category {
+        /* Style for Country display on card */
+        .channel-info .channel-country {
             font-size: 0.8em;
             color: #666;
             margin-top: 5px;
@@ -1312,7 +1312,7 @@
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' followers' : 'No follower data'}</p>
-                            <span class="channel-category">${channel.category || 'General'}</span>
+                            <span class="channel-country">${channel.country || 'General'}</span>
                         </div>
                         <div class="channel-actions"> <!-- Wrapper for buttons -->
                             <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boost</button>
@@ -1411,7 +1411,7 @@
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' followers' : 'No follower data'}</p>
-                            <span class="channel-category">${channel.category || 'General'}</span>
+                            <span class="channel-country">${channel.country || 'General'}</span>
                         </div>
                         <div class="channel-actions"> <!-- Wrapper for buttons -->
                             <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boost</button>
@@ -1661,7 +1661,7 @@
          */
         async function addChannel() {
             const link = document.getElementById('channelLink').value.trim();
-            const category = document.getElementById('addChannelCategory').value;
+            const country = document.getElementById('addChannelCategory').value;
 
             if (!link) {
                 showNotification('The \'link\' field is required.', 'error');
@@ -1670,7 +1670,7 @@
 
             const newChannelData = {
                 link: link,
-                category: category
+                country: country
             };
 
             showConfirmModalUser('Are you sure you want to add this channel?', async () => {
@@ -1798,7 +1798,7 @@
             const selectedCategory = document.getElementById('categorySelect').value;
             if (selectedCategory !== 'all') {
                 tempChannels = tempChannels.filter(channel =>
-                    (channel.category || 'General').toLowerCase() === selectedCategory.toLowerCase()
+                    (channel.country || 'General').toLowerCase() === selectedCategory.toLowerCase()
                 );
             }
 

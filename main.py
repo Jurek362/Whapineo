@@ -46,6 +46,29 @@ def verify_admin_token(request_headers):
     return False
 
 
+def log_activity(action_type, target_type, target_id=None, admin_token=None, details=None, old_value=None, new_value=None):
+    """Logs admin activity to the activity_logs table."""
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO activity_logs (action_type, target_type, target_id, admin_token, details, old_value, new_value)
+            VALUES (%s, %s, %s, %s, %s, %s, %s);
+        """, (action_type, target_type, target_id, admin_token[:20] if admin_token else None, details, old_value, new_value))
+        conn.commit()
+    except Exception as e:
+        print(f"ERROR: Failed to log activity: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
 def get_db_connection():
     """Ustanawia i zwraca połączenie z bazą danych PostgreSQL."""
     if not DATABASE_URL:
@@ -83,7 +106,7 @@ def initialize_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_boosted TIMESTAMP DEFAULT NULL,
                 is_partner BOOLEAN DEFAULT FALSE, -- Kolumna: czy kanał jest partnerem
-                category VARCHAR(255) DEFAULT 'General' -- NEW COLUMN: channel category
+                country VARCHAR(255) DEFAULT 'General' -- RENAMED: channel country (was category)
             );
         """)
         conn.commit() # Commit the table creation immediately
@@ -125,17 +148,40 @@ def initialize_db():
         finally:
             pass
 
-        # Dodaj kolumnę category, jeśli nie istnieje
+        # Dodaj kolumnę country, jeśli nie istnieje (renamed from category)
         try:
             cur.execute("""
-                ALTER TABLE channels ADD COLUMN IF NOT EXISTS category VARCHAR(255) DEFAULT 'General';
+                ALTER TABLE channels ADD COLUMN IF NOT EXISTS country VARCHAR(255) DEFAULT 'General';
             """)
             conn.commit()
-            print("INFO: Kolumna 'category' w tabeli 'channels' została sprawdzona/dodana pomyślnie.")
+            print("INFO: Kolumna 'country' w tabeli 'channels' została sprawdzona/dodana pomyślnie.")
         except Exception as e:
             if conn and not conn.autocommit:
                 conn.rollback()
-            print(f"WARNING: Błąd podczas dodawania kolumny 'category': {e}")
+            print(f"WARNING: Błąd podczas dodawania kolumny 'country': {e}")
+        finally:
+            pass
+
+        # Rename category column to country if it exists
+        try:
+            cur.execute("""
+                ALTER TABLE channels RENAME COLUMN category TO country;
+            """)
+            conn.commit()
+            print("INFO: Kolumna 'category' w tabeli 'channels' została pomyślnie zmieniona na 'country'.")
+        except psycopg2.ProgrammingError as e:
+            if conn and not conn.autocommit:
+                 conn.rollback()
+            if "column \"category\" does not exist" in str(e):
+                print("INFO: Kolumna 'category' nie istnieje w tabeli 'channels', prawdopodobnie już została zmieniona na 'country'.")
+            elif "column \"country\" already exists" in str(e):
+                print("INFO: Kolumna 'country' już istnieje, nie ma potrzeby zmiany nazwy z 'category'.")
+            else:
+                print(f"WARNING: Nieoczekiwany błąd podczas próby zmiany nazwy kolumny 'category': {e}")
+        except Exception as e:
+            if conn and not conn.autocommit:
+                conn.rollback()
+            print(f"WARNING: Ogólny błąd podczas operacji ALTER TABLE: {e}")
         finally:
             pass
 
@@ -158,6 +204,22 @@ def initialize_db():
                 channel_id INTEGER NOT NULL REFERENCES channels(id) ON DELETE CASCADE
             );
         """)
+        
+        # Create activity logs table for admin panel
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id SERIAL PRIMARY KEY,
+                action_type VARCHAR(100) NOT NULL,
+                target_type VARCHAR(50) NOT NULL,
+                target_id INTEGER,
+                admin_token VARCHAR(255),
+                details TEXT,
+                old_value TEXT,
+                new_value TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        
         conn.commit() # Commit pozostałych tabel
         print("INFO: Pozostałe tabele bazy danych zostały sprawdzone/utworzone pomyślnie.")
     except Exception as e:
@@ -314,7 +376,7 @@ def get_channels():
         conn = get_db_connection()
         cur = conn.cursor()
         # Pobierz tylko kanały, które NIE są partnerami
-        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, category FROM channels WHERE is_partner = FALSE ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, country FROM channels WHERE is_partner = FALSE ORDER BY last_boosted DESC NULLS LAST, created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
@@ -338,7 +400,7 @@ def get_channels():
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
                 'followerCount': channel[6] if channel[6] is not None else 0,
                 'profileImageUrl': channel[7],
-                'category': channel[8], # Dodano kategorię
+                'country': channel[8], # Zmieniono z category na country
                 'comments': comments_list
             })
         return jsonify(channels_list)
@@ -360,7 +422,7 @@ def get_partner_channels():
         conn = get_db_connection()
         cur = conn.cursor()
         # Pobierz tylko kanały, które SĄ partnerami
-        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, category FROM channels WHERE is_partner = TRUE ORDER BY created_at DESC;")
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, country FROM channels WHERE is_partner = TRUE ORDER BY created_at DESC;")
         channels_data = cur.fetchall()
 
         partner_channels_list = []
@@ -384,7 +446,7 @@ def get_partner_channels():
                 'ratingsCount': channel[5] if channel[5] is not None else 0,
                 'followerCount': channel[6] if channel[6] is not None else 0,
                 'profileImageUrl': channel[7],
-                'category': channel[8], # Dodano kategorię
+                'country': channel[8], # Zmieniono z category na country
                 'comments': comments_list
             })
         return jsonify(partner_channels_list)
@@ -408,8 +470,8 @@ def add_channel():
     frontend_name = data.get('name')
     frontend_description = data.get('description')
     frontend_profile_image_url = data.get('profileImageUrl')
-    # New: frontend may send category
-    frontend_category = data.get('category', 'General')
+    # New: frontend may send country
+    frontend_country = data.get('country', 'General')
 
 
     if not link:
@@ -432,7 +494,7 @@ def add_channel():
     description = scraped_data['description'] if scraped_data and scraped_data['description'] else frontend_description # Użyj scraped, fallback do frontend
     follower_count = scraped_data['follower_count'] if scraped_data else 0
     profile_image_url = scraped_data['profile_image_url'] if scraped_data and scraped_data['profile_image_url'] else frontend_profile_image_url
-    category = frontend_category # Use category from frontend, if available, otherwise default
+    country = frontend_country # Use country from frontend, if available, otherwise default
 
     # Ostateczne fallbacki, jeśli scraping i frontend nie dostarczyły danych
     if not name:
@@ -446,8 +508,8 @@ def add_channel():
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO channels (name, description, link, follower_count, profile_image_url, category) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;",
-            (name, description, link, follower_count, profile_image_url, category)
+            "INSERT INTO channels (name, description, link, follower_count, profile_image_url, country) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;",
+            (name, description, link, follower_count, profile_image_url, country)
         )
         channel_id = cur.fetchone()[0]
         conn.commit()
@@ -458,7 +520,7 @@ def add_channel():
             "description": description,
             "followerCount": follower_count,
             "profileImageUrl": profile_image_url,
-            "category": category
+            "country": country
         }), 201
     except psycopg2.errors.UniqueViolation:
         if conn:
@@ -507,7 +569,7 @@ def get_admin_channels():
         conn = get_db_connection()
         cur = conn.cursor()
         # Pobierz WSZYSTKIE kanały dla panelu admina
-        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, is_partner, category FROM channels ORDER BY created_at DESC;")
+        cur.execute("SELECT id, name, description, link, rating, ratings_count, follower_count, profile_image_url, is_partner, country FROM channels ORDER BY created_at DESC;")
         channels_data = cur.fetchall()
 
         channels_list = []
@@ -532,7 +594,7 @@ def get_admin_channels():
                 'followerCount': channel[6] if channel[6] is not None else 0,
                 'profileImageUrl': channel[7],
                 'is_partner': channel[8], # Dodano status is_partner
-                'category': channel[9], # Dodano kategorię
+                'country': channel[9], # Zmieniono z category na country
                 'comments': comments_list
             })
         return jsonify(channels_list)
@@ -548,7 +610,7 @@ def get_admin_channels():
 @app.route('/api/admin/channels/<int:channel_id>', methods=['PUT'])
 def update_channel(channel_id):
     """
-    Aktualizuje szczegóły kanału (nazwę, opis, link, profilowe URL, kategorię).
+    Aktualizuje szczegóły kanału (nazwę, opis, link, profilowe URL, kraj).
     Dostępne tylko dla administratora.
     """
     if not verify_admin_token(request.headers):
@@ -559,7 +621,7 @@ def update_channel(channel_id):
     description = data.get('description')
     link = data.get('link')
     profile_image_url = data.get('profileImageUrl')
-    category = data.get('category', 'General') # Use default if not provided
+    country = data.get('country', 'General') # Use default if not provided
 
     if not all([name, description, link]):
         return jsonify({"error": "Wszystkie pola (nazwa, opis, link) są wymagane."}), 400
@@ -572,14 +634,54 @@ def update_channel(channel_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        
+        # Get old values for logging
+        cur.execute("SELECT name, description, link, profile_image_url, country FROM channels WHERE id = %s;", (channel_id,))
+        old_data = cur.fetchone()
+        if not old_data:
+            return jsonify({"error": "Kanał nie znaleziony."}), 404
+            
+        old_values = {
+            'name': old_data[0],
+            'description': old_data[1], 
+            'link': old_data[2],
+            'profile_image_url': old_data[3],
+            'country': old_data[4]
+        }
+        
         cur.execute(
-            "UPDATE channels SET name = %s, description = %s, link = %s, profile_image_url = %s, category = %s WHERE id = %s RETURNING id;",
-            (name, description, link, profile_image_url, category, channel_id)
+            "UPDATE channels SET name = %s, description = %s, link = %s, profile_image_url = %s, country = %s WHERE id = %s RETURNING id;",
+            (name, description, link, profile_image_url, country, channel_id)
         )
         updated_id = cur.fetchone()
         conn.commit()
 
         if updated_id:
+            # Log the activity
+            new_values = {
+                'name': name,
+                'description': description,
+                'link': link, 
+                'profile_image_url': profile_image_url,
+                'country': country
+            }
+            
+            changes = []
+            for key in old_values:
+                if old_values[key] != new_values[key]:
+                    changes.append(f"{key}: '{old_values[key]}' -> '{new_values[key]}'")
+            
+            if changes:
+                log_activity(
+                    action_type="UPDATE_CHANNEL",
+                    target_type="channel", 
+                    target_id=channel_id,
+                    admin_token=request.headers.get('Authorization'),
+                    details=f"Updated channel: {', '.join(changes)}",
+                    old_value=str(old_values),
+                    new_value=str(new_values)
+                )
+            
             return jsonify({"message": f"Kanał o ID {channel_id} został pomyślnie zaktualizowany."}), 200
         else:
             return jsonify({"error": "Kanał nie znaleziony."}), 404
@@ -956,6 +1058,326 @@ def toggle_partner_status(channel_id):
         if conn:
             conn.rollback()
         return jsonify({"error": "Błąd podczas przełączania statusu partnera."}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+# --- New Enhanced Admin Endpoints ---
+
+@app.route('/api/admin/statistics', methods=['GET'])
+def get_admin_statistics():
+    """Get statistics for admin dashboard."""
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Channels per country
+        cur.execute("""
+            SELECT country, COUNT(*) as count 
+            FROM channels 
+            GROUP BY country 
+            ORDER BY count DESC;
+        """)
+        channels_per_country = [{'country': row[0], 'count': row[1]} for row in cur.fetchall()]
+        
+        # Comments per channel
+        cur.execute("""
+            SELECT c.name, COUNT(com.id) as comment_count
+            FROM channels c
+            LEFT JOIN comments com ON c.id = com.channel_id
+            GROUP BY c.id, c.name
+            ORDER BY comment_count DESC
+            LIMIT 10;
+        """)
+        comments_per_channel = [{'channel': row[0], 'comments': row[1]} for row in cur.fetchall()]
+        
+        # Total statistics
+        cur.execute("SELECT COUNT(*) FROM channels;")
+        total_channels = cur.fetchone()[0]
+        
+        cur.execute("SELECT COUNT(*) FROM comments;")
+        total_comments = cur.fetchone()[0]
+        
+        cur.execute("SELECT COUNT(*) FROM channels WHERE is_partner = TRUE;")
+        partner_channels = cur.fetchone()[0]
+        
+        cur.execute("SELECT AVG(rating) FROM channels WHERE rating > 0;")
+        avg_rating = cur.fetchone()[0] or 0
+        
+        statistics = {
+            'total_channels': total_channels,
+            'total_comments': total_comments,
+            'partner_channels': partner_channels,
+            'average_rating': round(float(avg_rating), 2),
+            'channels_per_country': channels_per_country,
+            'comments_per_channel': comments_per_channel
+        }
+        
+        return jsonify(statistics)
+        
+    except Exception as e:
+        print(f"ERROR: Error getting statistics: {e}")
+        return jsonify({"error": "Błąd podczas pobierania statystyk"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@app.route('/api/admin/activity-logs', methods=['GET'])
+def get_activity_logs():
+    """Get activity logs for admin panel."""
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+        
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 100)
+    offset = (page - 1) * per_page
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT action_type, target_type, target_id, details, created_at 
+            FROM activity_logs 
+            ORDER BY created_at DESC 
+            LIMIT %s OFFSET %s;
+        """, (per_page, offset))
+        
+        logs = []
+        for row in cur.fetchall():
+            logs.append({
+                'action_type': row[0],
+                'target_type': row[1], 
+                'target_id': row[2],
+                'details': row[3],
+                'created_at': row[4].isoformat() if row[4] else None
+            })
+        
+        # Get total count
+        cur.execute("SELECT COUNT(*) FROM activity_logs;")
+        total = cur.fetchone()[0]
+        
+        return jsonify({
+            'logs': logs,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'has_next': offset + per_page < total
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Error getting activity logs: {e}")
+        return jsonify({"error": "Błąd podczas pobierania logów aktywności"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@app.route('/api/admin/bulk-update-country', methods=['POST'])
+def bulk_update_country():
+    """Bulk update country for multiple channels."""
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    data = request.get_json()
+    channel_ids = data.get('channel_ids', [])
+    new_country = data.get('country')
+    
+    if not channel_ids or not new_country:
+        return jsonify({"error": "channel_ids i country są wymagane"}), 400
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Update channels
+        cur.execute("""
+            UPDATE channels 
+            SET country = %s 
+            WHERE id = ANY(%s) 
+            RETURNING id, name;
+        """, (new_country, channel_ids))
+        
+        updated_channels = cur.fetchall()
+        conn.commit()
+        
+        # Log the activity
+        channel_names = [f"{row[1]} (ID: {row[0]})" for row in updated_channels]
+        log_activity(
+            action_type="BULK_UPDATE_COUNTRY",
+            target_type="channels",
+            admin_token=request.headers.get('Authorization'),
+            details=f"Updated country to '{new_country}' for channels: {', '.join(channel_names)}",
+            new_value=new_country
+        )
+        
+        return jsonify({
+            "message": f"Country updated for {len(updated_channels)} channels",
+            "updated_count": len(updated_channels)
+        }), 200
+        
+    except Exception as e:
+        print(f"ERROR: Error in bulk country update: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Błąd podczas masowej aktualizacji kraju"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@app.route('/api/admin/comments/<int:comment_id>', methods=['PUT'])
+def update_comment(comment_id):
+    """Update a comment (admin only)."""
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    data = request.get_json()
+    new_text = data.get('text')
+    
+    if not new_text:
+        return jsonify({"error": "Text jest wymagany"}), 400
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get old text for logging
+        cur.execute("SELECT text FROM comments WHERE id = %s;", (comment_id,))
+        old_data = cur.fetchone()
+        if not old_data:
+            return jsonify({"error": "Komentarz nie znaleziony"}), 404
+            
+        old_text = old_data[0]
+        
+        cur.execute(
+            "UPDATE comments SET text = %s WHERE id = %s RETURNING id;",
+            (new_text, comment_id)
+        )
+        updated_id = cur.fetchone()
+        conn.commit()
+
+        if updated_id:
+            # Log the activity
+            log_activity(
+                action_type="UPDATE_COMMENT",
+                target_type="comment",
+                target_id=comment_id,
+                admin_token=request.headers.get('Authorization'),
+                details=f"Updated comment text",
+                old_value=old_text,
+                new_value=new_text
+            )
+            
+            return jsonify({"message": f"Komentarz o ID {comment_id} został zaktualizowany."}), 200
+        else:
+            return jsonify({"error": "Komentarz nie znaleziony."}), 404
+            
+    except Exception as e:
+        print(f"ERROR: Error updating comment {comment_id}: {e}")
+        if conn:
+            conn.rollback()
+        return jsonify({"error": "Błąd podczas aktualizacji komentarza"}), 500
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+@app.route('/api/admin/export/channels', methods=['GET'])
+def export_channels():
+    """Export channels data as CSV."""
+    if not verify_admin_token(request.headers):
+        return jsonify({"error": "Nieautoryzowany: Nieprawidłowy lub brakujący token"}), 403
+
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, name, description, link, rating, ratings_count, 
+                   follower_count, profile_image_url, is_partner, country, 
+                   created_at, last_boosted
+            FROM channels 
+            ORDER BY id;
+        """)
+        
+        channels = cur.fetchall()
+        
+        # Create CSV content
+        import csv
+        import io
+        
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'ID', 'Name', 'Description', 'Link', 'Rating', 'Ratings Count',
+            'Follower Count', 'Profile Image URL', 'Is Partner', 'Country',
+            'Created At', 'Last Boosted'
+        ])
+        
+        # Write data
+        for channel in channels:
+            writer.writerow([
+                channel[0],  # id
+                channel[1],  # name
+                channel[2],  # description
+                channel[3],  # link
+                channel[4],  # rating
+                channel[5],  # ratings_count
+                channel[6],  # follower_count
+                channel[7],  # profile_image_url
+                channel[8],  # is_partner
+                channel[9],  # country
+                channel[10].isoformat() if channel[10] else '',  # created_at
+                channel[11].isoformat() if channel[11] else ''   # last_boosted
+            ])
+        
+        output.seek(0)
+        csv_content = output.getvalue()
+        
+        # Log the activity
+        log_activity(
+            action_type="EXPORT_CHANNELS",
+            target_type="channels",
+            admin_token=request.headers.get('Authorization'),
+            details=f"Exported {len(channels)} channels to CSV"
+        )
+        
+        return jsonify({
+            "csv_data": csv_content,
+            "filename": f"channels_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Error exporting channels: {e}")
+        return jsonify({"error": "Błąd podczas eksportu kanałów"}), 500
     finally:
         if cur:
             cur.close()
