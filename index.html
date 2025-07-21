@@ -334,12 +334,6 @@
             color: #777;
             margin-top: 5px;
         }
-        .channel-info .channel-category { /* Style for category text */
-            font-size: 0.85em;
-            color: #555;
-            margin-top: 3px;
-            font-weight: bold;
-        }
 
 
         /* Collapsible content */
@@ -867,18 +861,6 @@
         .modal-buttons button {
             margin-left: 10px;
         }
-
-        /* Style for Category display on card */
-        .channel-info .channel-category {
-            font-size: 0.8em;
-            color: #666;
-            margin-top: 5px;
-            background-color: #e9ecef;
-            padding: 3px 8px;
-            border-radius: 5px;
-            display: inline-block;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -1312,7 +1294,6 @@
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' followers' : 'No follower data'}</p>
-                            <span class="channel-category">${channel.category || 'General'}</span>
                         </div>
                         <div class="channel-actions"> <!-- Wrapper for buttons -->
                             <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boost</button>
@@ -1411,7 +1392,6 @@
                         <div class="channel-info">
                             <h3>${channel.name}</h3>
                             <p>${channel.followerCount !== undefined && channel.followerCount > 0 ? channel.followerCount + ' followers' : 'No follower data'}</p>
-                            <span class="channel-category">${channel.category || 'General'}</span>
                         </div>
                         <div class="channel-actions"> <!-- Wrapper for buttons -->
                             <button class="btn-boost" onclick="handleBoostClick(${channel.id})" ${boostButtonDisabled}>Boost</button>

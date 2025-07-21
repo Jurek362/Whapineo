@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 from urllib.parse import urlparse
 import re
+import threading
+import time
 
 # Load environment variables from .env file (for local development)
 load_dotenv()
@@ -963,5 +965,98 @@ def toggle_partner_status(channel_id):
             conn.close()
 
 
+def refresh_channel_information():
+    """
+    Automatically refreshes channel information (avatar, description, name, followerCount)
+    for all channels in the database by scraping their WhatsApp pages.
+    This function runs every 30 minutes in a background thread.
+    """
+    print("INFO: Starting automatic channel information refresh...")
+    
+    conn = None
+    cur = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get all channels from database
+        cur.execute("SELECT id, link, name FROM channels ORDER BY id;")
+        channels_data = cur.fetchall()
+        
+        print(f"INFO: Found {len(channels_data)} channels to refresh")
+        
+        for channel_data in channels_data:
+            channel_id, channel_link, current_name = channel_data
+            
+            try:
+                print(f"INFO: Refreshing channel {channel_id} ({current_name})")
+                
+                # Fetch updated information from WhatsApp
+                scraped_data = fetch_channel_details_from_whatsapp_page(channel_link)
+                
+                if scraped_data:
+                    # Update channel information in database
+                    cur.execute("""
+                        UPDATE channels 
+                        SET name = %s, description = %s, profile_image_url = %s, follower_count = %s
+                        WHERE id = %s;
+                    """, (
+                        scraped_data['name'] or current_name,  # Keep current name if scraping fails
+                        scraped_data['description'] or 'Brak dostępnego opisu.',
+                        scraped_data['profile_image_url'],
+                        scraped_data['follower_count'] or 0,
+                        channel_id
+                    ))
+                    
+                    print(f"INFO: Updated channel {channel_id} - Name: {scraped_data['name']}, Followers: {scraped_data['follower_count']}")
+                else:
+                    print(f"WARNING: Failed to scrape data for channel {channel_id}")
+                    
+            except Exception as e:
+                print(f"ERROR: Failed to refresh channel {channel_id}: {e}")
+                continue
+        
+        # Commit all updates
+        conn.commit()
+        print("INFO: Channel information refresh completed successfully")
+        
+    except Exception as e:
+        print(f"ERROR: Critical error during channel refresh: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+
+def schedule_channel_refresh():
+    """
+    Runs the channel refresh function periodically every 30 minutes.
+    This function runs in a separate daemon thread.
+    """
+    while True:
+        try:
+            refresh_channel_information()
+            # Wait for 30 minutes (1800 seconds) before next refresh
+            time.sleep(1800)
+        except Exception as e:
+            print(f"ERROR: Exception in scheduled refresh: {e}")
+            # Wait 5 minutes before retrying if there's an error
+            time.sleep(300)
+
+
+def start_background_refresh():
+    """
+    Starts the background thread for automatic channel refresh.
+    """
+    refresh_thread = threading.Thread(target=schedule_channel_refresh, daemon=True)
+    refresh_thread.start()
+    print("INFO: Background channel refresh thread started")
+
+
 if __name__ == '__main__':
+    # Start the background refresh thread
+    start_background_refresh()
     app.run(debug=True, port=5000)
