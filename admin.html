@@ -190,7 +190,14 @@
         
         /* New: for comment actions */
         .comment-actions {
-            margin-left: 10px; /* Space between comment text and delete button */
+            display: flex;
+            gap: 5px;
+            margin-left: 10px; /* Space between comment text and action buttons */
+        }
+        
+        .comment-actions .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.8em;
         }
 
         @media (min-width: 768px) { /* Na większych ekranach zmień układ na wiersz */
@@ -386,6 +393,158 @@
                 padding: 20px;
             }
         }
+
+        /* Admin Panel Tab Styles */
+        .admin-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-button {
+            background: #f8f9fa;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            font-weight: bold;
+        }
+
+        .tab-button:hover {
+            background: #e9ecef;
+        }
+
+        .tab-button.active {
+            background: white;
+            border-bottom-color: #2d5a2d;
+            color: #2d5a2d;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Statistics Styles */
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card h4 {
+            color: #2d5a2d;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1a4d3a;
+        }
+
+        /* Activity Logs Styles */
+        .activity-log {
+            background: #f8f9fa;
+            border-left: 4px solid #2d5a2d;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .activity-log .log-header {
+            font-weight: bold;
+            color: #2d5a2d;
+            margin-bottom: 5px;
+        }
+
+        .activity-log .log-details {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .activity-log .log-time {
+            color: #999;
+            font-size: 0.8em;
+            float: right;
+        }
+
+        /* Bulk Operations Styles */
+        .bulk-operations-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .bulk-channels-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background: #f8f9fa;
+        }
+
+        .bulk-channel-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .bulk-channel-item:last-child {
+            border-bottom: none;
+        }
+
+        .bulk-channel-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        /* Export/Import Styles */
+        .export-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        /* Pagination Controls */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Edit Comment Modal */
+        .edit-comment-modal .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
     </style>
 </head>
 <body>
@@ -407,13 +566,103 @@
 
         <div id="adminContent" class="admin-content" style="display: none;">
             <h2>Channel Management</h2>
-            <div id="channelsAdminList">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading channels for management...</p>
+            
+            <!-- Navigation tabs for different admin sections -->
+            <div class="admin-tabs">
+                <button class="tab-button active" onclick="switchTab('channels')">Channel Management</button>
+                <button class="tab-button" onclick="switchTab('statistics')">Statistics</button>
+                <button class="tab-button" onclick="switchTab('activity-logs')">Activity Logs</button>
+                <button class="tab-button" onclick="switchTab('bulk-operations')">Bulk Operations</button>
+                <button class="tab-button" onclick="switchTab('export-import')">Export/Import</button>
+            </div>
+
+            <!-- Channel Management Tab -->
+            <div id="channelsTab" class="tab-content active">
+                <div id="channelsAdminList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading channels for management...</p>
+                    </div>
+                </div>
+                <button class="btn btn-warning" onclick="showConfirmModal('Are you sure you want to delete ALL channels and comments? This is IRREVERSIBLE!', clearAllChannels)">Clear All Channels</button>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="statisticsTab" class="tab-content">
+                <h3>Platform Statistics</h3>
+                <div id="statisticsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading statistics...</p>
+                    </div>
                 </div>
             </div>
-            <button class="btn btn-warning" onclick="showConfirmModal('Are you sure you want to delete ALL channels and comments? This is IRREVERSIBLE!', clearAllChannels)">Clear All Channels</button>
+
+            <!-- Activity Logs Tab -->
+            <div id="activity-logsTab" class="tab-content">
+                <h3>Recent Activity</h3>
+                <div id="activityLogsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading activity logs...</p>
+                    </div>
+                </div>
+                <div class="pagination-controls">
+                    <button id="prevLogsBtn" class="btn btn-primary" onclick="loadActivityLogs(currentLogsPage - 1)">Previous</button>
+                    <span id="logsPageInfo">Page 1</span>
+                    <button id="nextLogsBtn" class="btn btn-primary" onclick="loadActivityLogs(currentLogsPage + 1)">Next</button>
+                </div>
+            </div>
+
+            <!-- Bulk Operations Tab -->
+            <div id="bulk-operationsTab" class="tab-content">
+                <h3>Bulk Operations</h3>
+                <div class="bulk-operations-section">
+                    <h4>Update Country for Multiple Channels</h4>
+                    <div class="form-group">
+                        <label>Select Channels:</label>
+                        <div id="bulkChannelsList" class="bulk-channels-list">
+                            <!-- Channels will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="bulkCountrySelect">New Country:</label>
+                        <select id="bulkCountrySelect" class="form-input">
+                            <option value="United States">United States</option>
+                            <option value="United Kingdom">United Kingdom</option>
+                            <option value="Canada">Canada</option>
+                            <option value="Australia">Australia</option>
+                            <option value="Germany">Germany</option>
+                            <option value="France">France</option>
+                            <option value="Spain">Spain</option>
+                            <option value="Italy">Italy</option>
+                            <option value="Netherlands">Netherlands</option>
+                            <option value="Poland">Poland</option>
+                            <option value="Brazil">Brazil</option>
+                            <option value="Mexico">Mexico</option>
+                            <option value="Argentina">Argentina</option>
+                            <option value="India">India</option>
+                            <option value="Japan">Japan</option>
+                            <option value="South Korea">South Korea</option>
+                            <option value="China">China</option>
+                            <option value="Russia">Russia</option>
+                            <option value="South Africa">South Africa</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="performBulkCountryUpdate()">Update Selected Channels</button>
+                </div>
+            </div>
+
+            <!-- Export/Import Tab -->
+            <div id="export-importTab" class="tab-content">
+                <h3>Data Management</h3>
+                <div class="export-section">
+                    <h4>Export Data</h4>
+                    <button class="btn btn-success" onclick="exportChannelsData()">Export Channels to CSV</button>
+                </div>
+                <!-- Import functionality can be added here in the future -->
+            </div>
         </div>
     </div>
 
@@ -454,8 +703,29 @@
                 <input type="url" class="form-input" id="editProfileImageUrl">
             </div>
             <div class="form-group">
-                <label for="editChannelCategory">Country:</label>
-                <input type="text" class="form-input" id="editChannelCategory" value="General">
+                <label for="editChannelCountry">Country:</label>
+                <select class="form-input" id="editChannelCountry">
+                    <option value="United States">United States</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Germany">Germany</option>
+                    <option value="France">France</option>
+                    <option value="Spain">Spain</option>
+                    <option value="Italy">Italy</option>
+                    <option value="Netherlands">Netherlands</option>
+                    <option value="Poland">Poland</option>
+                    <option value="Brazil">Brazil</option>
+                    <option value="Mexico">Mexico</option>
+                    <option value="Argentina">Argentina</option>
+                    <option value="India">India</option>
+                    <option value="Japan">Japan</option>
+                    <option value="South Korea">South Korea</option>
+                    <option value="China">China</option>
+                    <option value="Russia">Russia</option>
+                    <option value="South Africa">South Africa</option>
+                    <option value="General">General</option>
+                </select>
             </div>
             <div class="modal-buttons">
                 <button class="btn btn-primary" onclick="submitEditChannel()">Save Changes</button>
@@ -464,9 +734,64 @@
         </div>
     </div>
 
+    <!-- Edit Comment Modal -->
+    <div id="editCommentModal" class="modal edit-comment-modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="hideEditCommentModal()">&times;</span>
+            <h2>Edit Comment</h2>
+            <input type="hidden" id="editCommentId">
+            <div class="form-group">
+                <label for="editCommentText">Comment Text:</label>
+                <textarea class="form-input" id="editCommentText" rows="4" required></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="submitEditComment()">Save Changes</button>
+                <button class="btn btn-danger" onclick="hideEditCommentModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_BASE_URL = 'https://whapineobackend.onrender.com'; // Your Render backend URL here
         let adminToken = null; // Stores the token received after successful login
+        let currentLogsPage = 1; // For activity logs pagination
+        let currentTab = 'channels'; // Track current active tab
+
+        /**
+         * Switch between admin panel tabs
+         */
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Add active class to selected tab button
+            event.target.classList.add('active');
+            
+            currentTab = tabName;
+            
+            // Load data for the selected tab
+            switch(tabName) {
+                case 'statistics':
+                    loadStatistics();
+                    break;
+                case 'activity-logs':
+                    loadActivityLogs(1);
+                    break;
+                case 'bulk-operations':
+                    loadBulkChannelsList();
+                    break;
+            }
+        }
 
         /**
          * Displays a temporary notification message on the screen.
@@ -592,13 +917,13 @@
                         <p>Image: ${channel.profileImageUrl ? `<a href="${channel.profileImageUrl}" target="_blank">Link</a>` : 'None'}</p>
                         <p>Followers: ${channel.followerCount !== undefined ? channel.followerCount : 0}</p>
                         <p>Rating: ${channel.rating.toFixed(1)}/5 (${channel.ratingsCount} ratings)</p>
-                        <p>Country: <strong>${channel.category}</strong></p>
+                        <p>Country: <strong>${channel.country}</strong></p>
                         <p>Partner: <strong>${channel.is_partner ? 'YES' : 'NO'}</strong></p>
                     </div>
                     <div class="channel-item-actions">
                         <button class="btn btn-admin-action" onclick="adminBoostChannel(${channel.id})">Admin Boost</button>
                         <button class="btn btn-admin-action" onclick="adminUnboostChannel(${channel.id})">Admin Unboost</button>
-                        <button class="btn btn-success-light" onclick="showEditChannelModal(${channel.id}, '${channel.name.replace(/'/g, "\\'")}', '${channel.description.replace(/'/g, "\\'")}', '${channel.link.replace(/'/g, "\\'")}', '${channel.profileImageUrl ? channel.profileImageUrl.replace(/'/g, "\\'") : ''}', '${channel.category.replace(/'/g, "\\'")}')">Edit Channel</button>
+                        <button class="btn btn-success-light" onclick="showEditChannelModal(${channel.id}, '${channel.name.replace(/'/g, "\\'")}', '${channel.description.replace(/'/g, "\\'")}', '${channel.link.replace(/'/g, "\\'")}', '${channel.profileImageUrl ? channel.profileImageUrl.replace(/'/g, "\\'") : ''}', '${channel.country.replace(/'/g, "\\'")}')">Edit Channel</button>
                         <button class="btn btn-info" onclick="togglePartnerStatus(${channel.id}, ${channel.is_partner ? 'true' : 'false'})">
                             ${channel.is_partner ? 'Remove from Partners' : 'Set as Partner'}
                         </button>
@@ -612,7 +937,10 @@
                                     <p>${comment.text}</p>
                                     <p class="comment-author-date">Author: ${comment.author} (${comment.date})</p>
                                 </div>
-                                <button class="btn btn-danger btn-sm comment-actions" onclick="showConfirmModal('Are you sure you want to delete comment with ID ${comment.id}?', () => deleteComment(${comment.id}))">Delete</button>
+                                <div class="comment-actions">
+                                    <button class="btn btn-success-light btn-sm" onclick="showEditCommentModal(${comment.id}, '${comment.text.replace(/'/g, "\\'")}')">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="showConfirmModal('Are you sure you want to delete comment with ID ${comment.id}?', () => deleteComment(${comment.id}))">Delete</button>
+                                </div>
                             </div>
                         `).join('') : '<p>No comments.</p>'}
                     </div>
@@ -693,15 +1021,15 @@
          * @param {string} description Channel description.
          * @param {string} link Channel link.
          * @param {string} profileImageUrl Channel profile image URL.
-         * @param {string} category Channel category.
+         * @param {string} country Channel country.
          */
-        function showEditChannelModal(id, name, description, link, profileImageUrl, category) {
+        function showEditChannelModal(id, name, description, link, profileImageUrl, country) {
             document.getElementById('editChannelId').value = id;
             document.getElementById('editChannelName').value = name;
             document.getElementById('editChannelDescription').value = description;
             document.getElementById('editChannelLink').value = link;
             document.getElementById('editProfileImageUrl').value = profileImageUrl;
-            document.getElementById('editChannelCategory').value = category || 'Ogólne'; // Set default if null/empty
+            document.getElementById('editChannelCountry').value = country || 'General'; // Set default if null/empty
             document.getElementById('editChannelModal').style.display = 'flex';
         }
 
@@ -726,7 +1054,7 @@
             const description = document.getElementById('editChannelDescription').value.trim();
             const link = document.getElementById('editChannelLink').value.trim();
             const profileImageUrl = document.getElementById('editProfileImageUrl').value.trim();
-            const category = document.getElementById('editChannelCategory').value.trim();
+            const country = document.getElementById('editChannelCountry').value.trim();
 
             if (!name || !description || !link) {
                 showNotification('Name, description and link are required!', 'error');
@@ -740,7 +1068,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${adminToken}`
                     },
-                    body: JSON.stringify({ name, description, link, profileImageUrl, category })
+                    body: JSON.stringify({ name, description, link, profileImageUrl, country })
                 });
 
                 if (response.ok) {
@@ -754,6 +1082,355 @@
             } catch (error) {
                 console.error('Error sending channel update:', error);
                 showNotification('Server connection error while updating channel.', 'error');
+            }
+        }
+
+        /**
+         * Load and display statistics
+         */
+        async function loadStatistics() {
+            const container = document.getElementById('statisticsContainer');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading statistics...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/statistics`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const stats = await response.json();
+                    renderStatistics(stats);
+                } else {
+                    container.innerHTML = '<p style="color: #e74c3c;">Failed to load statistics.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                container.innerHTML = '<p style="color: #e74c3c;">Server connection error.</p>';
+            }
+        }
+
+        /**
+         * Render statistics dashboard
+         */
+        function renderStatistics(stats) {
+            const container = document.getElementById('statisticsContainer');
+            
+            let channelsPerCountryHtml = '';
+            if (stats.channels_per_country && stats.channels_per_country.length > 0) {
+                channelsPerCountryHtml = stats.channels_per_country.map(item => 
+                    `<li>${item.country}: ${item.count} channels</li>`
+                ).join('');
+            } else {
+                channelsPerCountryHtml = '<li>No data available</li>';
+            }
+
+            let commentsPerChannelHtml = '';
+            if (stats.comments_per_channel && stats.comments_per_channel.length > 0) {
+                commentsPerChannelHtml = stats.comments_per_channel.map(item => 
+                    `<li>${item.channel}: ${item.comments} comments</li>`
+                ).join('');
+            } else {
+                commentsPerChannelHtml = '<li>No data available</li>';
+            }
+
+            container.innerHTML = `
+                <div class="statistics-grid">
+                    <div class="stat-card">
+                        <h4>Total Channels</h4>
+                        <div class="stat-number">${stats.total_channels}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Total Comments</h4>
+                        <div class="stat-number">${stats.total_comments}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Partner Channels</h4>
+                        <div class="stat-number">${stats.partner_channels}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Average Rating</h4>
+                        <div class="stat-number">${stats.average_rating}</div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px;">
+                    <div>
+                        <h4>Channels per Country</h4>
+                        <ul style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            ${channelsPerCountryHtml}
+                        </ul>
+                    </div>
+                    <div>
+                        <h4>Top Channels by Comments (Top 10)</h4>
+                        <ul style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                            ${commentsPerChannelHtml}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Load and display activity logs
+         */
+        async function loadActivityLogs(page = 1) {
+            const container = document.getElementById('activityLogsContainer');
+            currentLogsPage = page;
+            
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading activity logs...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/activity-logs?page=${page}&per_page=20`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderActivityLogs(data);
+                } else {
+                    container.innerHTML = '<p style="color: #e74c3c;">Failed to load activity logs.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading activity logs:', error);
+                container.innerHTML = '<p style="color: #e74c3c;">Server connection error.</p>';
+            }
+        }
+
+        /**
+         * Render activity logs
+         */
+        function renderActivityLogs(data) {
+            const container = document.getElementById('activityLogsContainer');
+            
+            if (data.logs.length === 0) {
+                container.innerHTML = '<p>No activity logs found.</p>';
+                return;
+            }
+
+            const logsHtml = data.logs.map(log => {
+                const date = new Date(log.created_at);
+                return `
+                    <div class="activity-log">
+                        <div class="log-time">${date.toLocaleString()}</div>
+                        <div class="log-header">${log.action_type} - ${log.target_type}</div>
+                        <div class="log-details">${log.details || 'No details available'}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = logsHtml;
+
+            // Update pagination
+            document.getElementById('logsPageInfo').textContent = `Page ${data.page} of ${Math.ceil(data.total / 20)}`;
+            document.getElementById('prevLogsBtn').disabled = data.page <= 1;
+            document.getElementById('nextLogsBtn').disabled = !data.has_next;
+        }
+
+        /**
+         * Load channels list for bulk operations
+         */
+        async function loadBulkChannelsList() {
+            const container = document.getElementById('bulkChannelsList');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading channels...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/channels`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const channels = await response.json();
+                    renderBulkChannelsList(channels);
+                } else {
+                    container.innerHTML = '<p style="color: #e74c3c;">Failed to load channels.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading channels for bulk operations:', error);
+                container.innerHTML = '<p style="color: #e74c3c;">Server connection error.</p>';
+            }
+        }
+
+        /**
+         * Render channels list for bulk operations
+         */
+        function renderBulkChannelsList(channels) {
+            const container = document.getElementById('bulkChannelsList');
+            
+            if (channels.length === 0) {
+                container.innerHTML = '<p>No channels found.</p>';
+                return;
+            }
+
+            const channelsHtml = channels.map(channel => `
+                <div class="bulk-channel-item">
+                    <input type="checkbox" id="channel_${channel.id}" value="${channel.id}">
+                    <label for="channel_${channel.id}">
+                        <strong>${channel.name}</strong> (${channel.country || 'General'})
+                    </label>
+                </div>
+            `).join('');
+
+            container.innerHTML = channelsHtml;
+        }
+
+        /**
+         * Perform bulk country update
+         */
+        async function performBulkCountryUpdate() {
+            const checkboxes = document.querySelectorAll('#bulkChannelsList input[type="checkbox"]:checked');
+            const channelIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            const newCountry = document.getElementById('bulkCountrySelect').value;
+
+            if (channelIds.length === 0) {
+                showNotification('Please select at least one channel.', 'error');
+                return;
+            }
+
+            if (!newCountry) {
+                showNotification('Please select a country.', 'error');
+                return;
+            }
+
+            showConfirmModal(`Are you sure you want to update country to "${newCountry}" for ${channelIds.length} selected channels?`, async () => {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/admin/bulk-update-country`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${adminToken}`
+                        },
+                        body: JSON.stringify({ channel_ids: channelIds, country: newCountry })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        showNotification(`Successfully updated ${result.updated_count} channels.`, 'success');
+                        loadBulkChannelsList(); // Reload the list
+                        if (currentTab === 'channels') {
+                            loadAdminChannels(); // Reload main channels list if visible
+                        }
+                    } else {
+                        const errorData = await response.json();
+                        showNotification(errorData.error || 'Error performing bulk update.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error performing bulk update:', error);
+                    showNotification('Server connection error during bulk update.', 'error');
+                }
+            });
+        }
+
+        /**
+         * Export channels data
+         */
+        async function exportChannelsData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/export/channels`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Create and download the CSV file
+                    const blob = new Blob([data.csv_data], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = data.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    showNotification('Channels data exported successfully!', 'success');
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Error exporting data.', 'error');
+                }
+            } catch (error) {
+                console.error('Error exporting channels data:', error);
+                showNotification('Server connection error during export.', 'error');
+            }
+        }
+
+        /**
+         * Show edit comment modal
+         */
+        function showEditCommentModal(commentId, currentText) {
+            document.getElementById('editCommentId').value = commentId;
+            document.getElementById('editCommentText').value = currentText;
+            document.getElementById('editCommentModal').style.display = 'flex';
+        }
+
+        /**
+         * Hide edit comment modal
+         */
+        function hideEditCommentModal() {
+            document.getElementById('editCommentModal').style.display = 'none';
+        }
+
+        /**
+         * Submit comment edit
+         */
+        async function submitEditComment() {
+            if (!adminToken) {
+                showNotification('Authorization error: Missing admin token. Please log in again.', 'error');
+                return;
+            }
+
+            const commentId = document.getElementById('editCommentId').value;
+            const newText = document.getElementById('editCommentText').value.trim();
+
+            if (!newText) {
+                showNotification('Comment text is required!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/comments/${commentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ text: newText })
+                });
+
+                if (response.ok) {
+                    showNotification('Comment updated successfully!', 'success');
+                    hideEditCommentModal();
+                    loadAdminChannels(); // Reload list to show changes
+                } else {
+                    const errorData = await response.json();
+                    showNotification(errorData.error || 'Error updating comment.', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating comment:', error);
+                showNotification('Server connection error while updating comment.', 'error');
             }
         }
 
